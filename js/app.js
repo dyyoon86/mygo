@@ -1,4 +1,142 @@
 /**
+ * 바둑돌 사운드 매니저 (Web Audio API)
+ */
+class SoundManager {
+    constructor() {
+        this.audioContext = null;
+        this.initialized = false;
+    }
+
+    init() {
+        if (this.initialized) return;
+        try {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            this.initialized = true;
+        } catch (e) {
+            console.warn('Web Audio API not supported');
+        }
+    }
+
+    // 바둑돌 착수 소리 (나무 바둑판에 돌 놓는 소리)
+    playStoneSound() {
+        if (!this.initialized) this.init();
+        if (!this.audioContext) return;
+
+        const ctx = this.audioContext;
+        const now = ctx.currentTime;
+
+        // 메인 임팩트 사운드 (돌이 판에 닿는 소리)
+        const osc1 = ctx.createOscillator();
+        const gain1 = ctx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(800, now);
+        osc1.frequency.exponentialRampToValueAtTime(200, now + 0.08);
+        gain1.gain.setValueAtTime(0.4, now);
+        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+        osc1.connect(gain1);
+        gain1.connect(ctx.destination);
+        osc1.start(now);
+        osc1.stop(now + 0.12);
+
+        // 나무 울림 (보드 공명)
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.type = 'triangle';
+        osc2.frequency.setValueAtTime(180, now);
+        osc2.frequency.exponentialRampToValueAtTime(120, now + 0.15);
+        gain2.gain.setValueAtTime(0.2, now);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+        osc2.connect(gain2);
+        gain2.connect(ctx.destination);
+        osc2.start(now);
+        osc2.stop(now + 0.2);
+
+        // 클릭 노이즈 (돌 부딪히는 소리)
+        const bufferSize = ctx.sampleRate * 0.05;
+        const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+            output[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.1));
+        }
+        const noise = ctx.createBufferSource();
+        noise.buffer = noiseBuffer;
+        const noiseGain = ctx.createGain();
+        const noiseFilter = ctx.createBiquadFilter();
+        noiseFilter.type = 'bandpass';
+        noiseFilter.frequency.value = 2000;
+        noiseFilter.Q.value = 1;
+        noiseGain.gain.setValueAtTime(0.15, now);
+        noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+        noise.connect(noiseFilter);
+        noiseFilter.connect(noiseGain);
+        noiseGain.connect(ctx.destination);
+        noise.start(now);
+    }
+
+    // 돌 따먹는 소리 (여러 돌이 치워지는 소리)
+    playCaptureSound(count = 1) {
+        if (!this.initialized) this.init();
+        if (!this.audioContext) return;
+
+        const ctx = this.audioContext;
+        const now = ctx.currentTime;
+
+        // 잡힌 돌 개수에 따라 소리 조절
+        const intensity = Math.min(count, 5) / 5;
+
+        // 돌 굴러가는 소리 (여러 음)
+        for (let i = 0; i < Math.min(count, 4); i++) {
+            const delay = i * 0.03;
+
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            const baseFreq = 400 + Math.random() * 200;
+            osc.frequency.setValueAtTime(baseFreq, now + delay);
+            osc.frequency.exponentialRampToValueAtTime(baseFreq * 0.3, now + delay + 0.15);
+            gain.gain.setValueAtTime(0.15 * (1 - i * 0.2), now + delay);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.15);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now + delay);
+            osc.stop(now + delay + 0.15);
+        }
+
+        // 그릇에 담기는 소리 (통 울림)
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.type = 'triangle';
+        osc2.frequency.setValueAtTime(250, now + 0.1);
+        osc2.frequency.exponentialRampToValueAtTime(150, now + 0.3);
+        gain2.gain.setValueAtTime(0.1 + intensity * 0.1, now + 0.1);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+        osc2.connect(gain2);
+        gain2.connect(ctx.destination);
+        osc2.start(now + 0.1);
+        osc2.stop(now + 0.35);
+
+        // 딸깍 소리
+        const clickBuffer = ctx.createBuffer(1, ctx.sampleRate * 0.08, ctx.sampleRate);
+        const clickData = clickBuffer.getChannelData(0);
+        for (let i = 0; i < clickData.length; i++) {
+            clickData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (clickData.length * 0.05));
+        }
+        const click = ctx.createBufferSource();
+        click.buffer = clickBuffer;
+        const clickGain = ctx.createGain();
+        const clickFilter = ctx.createBiquadFilter();
+        clickFilter.type = 'highpass';
+        clickFilter.frequency.value = 1500;
+        clickGain.gain.setValueAtTime(0.08 + intensity * 0.05, now + 0.08);
+        clickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+        click.connect(clickFilter);
+        clickFilter.connect(clickGain);
+        clickGain.connect(ctx.destination);
+        click.start(now + 0.08);
+    }
+}
+
+/**
  * 바둑 게임 메인 애플리케이션
  */
 class BadukApp {
@@ -8,6 +146,7 @@ class BadukApp {
         this.ai = new BadukAI(this.game, 2);
         this.sgf = new SGFHandler();
         this.online = new BadukOnline(this.game);
+        this.soundManager = new SoundManager();
 
         // 게임 모드: 'local', 'ai', 'online'
         this.mode = 'local';
@@ -211,7 +350,15 @@ class BadukApp {
 
         if (result.success) {
             this.lastMove = { x, y };
-            this.playSound();
+            this.playStoneSound();
+
+            // 따먹은 돌이 있으면 캡처 소리도 재생
+            if (result.captured && result.captured.length > 0) {
+                setTimeout(() => {
+                    this.playCaptureSound(result.captured.length);
+                }, 100);
+            }
+
             this.updateUI();
             this.render();
             this.updateMoveList();
@@ -546,15 +693,16 @@ class BadukApp {
         ctx.stroke();
     }
 
-    // 소리 재생
-    playSound() {
+    // 돌 놓는 소리 재생
+    playStoneSound() {
         if (!this.settings.soundEnabled) return;
+        this.soundManager.playStoneSound();
+    }
 
-        const audio = document.getElementById('stone-sound');
-        if (audio) {
-            audio.currentTime = 0;
-            audio.play().catch(() => {});
-        }
+    // 돌 따먹는 소리 재생
+    playCaptureSound(count) {
+        if (!this.settings.soundEnabled) return;
+        this.soundManager.playCaptureSound(count);
     }
 
     // UI 업데이트
