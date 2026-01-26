@@ -511,32 +511,41 @@ class BadukApp {
 
     playCurtainEffect(callback) {
         const overlay = document.getElementById('curtain-overlay');
+        if (!overlay) {
+            if (callback) callback();
+            return;
+        }
 
-        // 커튼 닫기
+        // 초기화
+        overlay.classList.remove('show-text');
+
+        // 커튼 닫기 시작
         overlay.classList.add('active', 'closing');
-        overlay.classList.remove('opening');
 
-        // 커튼이 닫힌 후 텍스트 표시
+        // 커튼이 완전히 닫힌 후 텍스트 표시 (600ms 후)
         setTimeout(() => {
             overlay.classList.add('show-text');
-        }, 600);
+        }, 500);
 
-        // 콜백 실행 (게임 리셋)
+        // 게임 리셋 실행 (800ms 후)
         setTimeout(() => {
             if (callback) callback();
-        }, 900);
+        }, 700);
 
-        // 커튼 열기
+        // 텍스트 숨기기 (1200ms 후)
         setTimeout(() => {
             overlay.classList.remove('show-text');
+        }, 1100);
+
+        // 커튼 열기 시작 (1300ms 후)
+        setTimeout(() => {
             overlay.classList.remove('closing');
-            overlay.classList.add('opening');
         }, 1200);
 
-        // 이펙트 종료
+        // 완전 종료 (1900ms 후)
         setTimeout(() => {
-            overlay.classList.remove('active', 'opening');
-        }, 2000);
+            overlay.classList.remove('active');
+        }, 1800);
     }
 
     // 렌더링

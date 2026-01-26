@@ -298,51 +298,39 @@ body {
     inset: 0;
     z-index: 3000;
     pointer-events: none;
-    opacity: 0;
-    visibility: hidden;
+    overflow: hidden;
 }
 
 .curtain-overlay.active {
-    opacity: 1;
-    visibility: visible;
     pointer-events: auto;
 }
 
 .curtain {
     position: absolute;
     top: 0;
-    width: 50%;
+    width: 51%;
     height: 100%;
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
-    transition: transform 0.8s cubic-bezier(0.65, 0, 0.35, 1);
+    background: linear-gradient(180deg, #1a1a2e 0%, #16213e 40%, #1a1a2e 100%);
+    box-shadow: 0 0 50px rgba(0,0,0,0.8);
 }
 
 .curtain-left {
     left: 0;
-    transform: translateX(-100%);
-    border-right: 3px solid #dcb35c;
+    transform: translateX(-101%);
+    border-right: 4px solid #dcb35c;
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .curtain-right {
     right: 0;
-    transform: translateX(100%);
-    border-left: 3px solid #dcb35c;
+    transform: translateX(101%);
+    border-left: 4px solid #dcb35c;
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.curtain-overlay.closing .curtain-left {
-    transform: translateX(0);
-}
-
+.curtain-overlay.closing .curtain-left,
 .curtain-overlay.closing .curtain-right {
     transform: translateX(0);
-}
-
-.curtain-overlay.opening .curtain-left {
-    transform: translateX(-100%);
-}
-
-.curtain-overlay.opening .curtain-right {
-    transform: translateX(100%);
 }
 
 .curtain-text {
@@ -350,20 +338,21 @@ body {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    font-size: 32px;
+    font-size: 36px;
     font-weight: bold;
     color: #dcb35c;
-    text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    text-shadow: 0 0 20px rgba(220, 179, 92, 0.8), 0 4px 15px rgba(0,0,0,0.8);
     opacity: 0;
     transition: opacity 0.3s ease;
     z-index: 10;
+    white-space: nowrap;
 }
 
 .curtain-overlay.show-text .curtain-text {
     opacity: 1;
 }
 
-/* 커튼 장식 패턴 */
+/* 커튼 장식 - 세로 줄무늬 */
 .curtain::before {
     content: '';
     position: absolute;
@@ -371,32 +360,34 @@ body {
     left: 0;
     right: 0;
     bottom: 0;
-    background-image:
-        repeating-linear-gradient(
-            90deg,
-            transparent,
-            transparent 40px,
-            rgba(220, 179, 92, 0.03) 40px,
-            rgba(220, 179, 92, 0.03) 80px
-        );
+    background: repeating-linear-gradient(
+        90deg,
+        transparent 0px,
+        transparent 30px,
+        rgba(255,255,255,0.02) 30px,
+        rgba(255,255,255,0.02) 60px
+    );
 }
 
-.curtain::after {
+/* 커튼 중앙 빛 효과 */
+.curtain-left::after {
     content: '';
     position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 60px;
-    height: 120px;
-    background: radial-gradient(ellipse at center, rgba(220, 179, 92, 0.2) 0%, transparent 70%);
-}
-
-.curtain-left::after {
-    right: 10px;
+    top: 0;
+    right: 0;
+    width: 80px;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(220, 179, 92, 0.1));
 }
 
 .curtain-right::after {
-    left: 10px;
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 80px;
+    height: 100%;
+    background: linear-gradient(-90deg, transparent, rgba(220, 179, 92, 0.1));
 }
 
 /* 반응형 */
