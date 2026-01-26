@@ -643,6 +643,12 @@ body {
     background: rgba(255, 68, 68, 0.3);
 }
 
+.control-btn.active {
+    background: linear-gradient(145deg, #10b981, #059669);
+    border-color: #10b981;
+    color: #fff;
+}
+
 /* ==================== 설정 패널 ==================== */
 .settings-panel {
     position: fixed;

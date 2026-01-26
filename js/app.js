@@ -216,6 +216,10 @@ class BadukApp {
             soundEnabled: true
         };
 
+        // 개가(계가) 모드
+        this.countingMode = false;
+        this.deadStones = new Set(); // 사석 표시
+
         this.canvas = document.getElementById('board-canvas');
         this.ctx = this.canvas.getContext('2d');
 
@@ -273,6 +277,7 @@ class BadukApp {
         document.getElementById('btn-new-game').addEventListener('click', () => this.newGame());
         document.getElementById('btn-undo').addEventListener('click', () => this.handleUndo());
         document.getElementById('btn-pass').addEventListener('click', () => this.handlePass());
+        document.getElementById('btn-count').addEventListener('click', () => this.toggleCountingMode());
         document.getElementById('btn-resign').addEventListener('click', () => this.handleResign());
 
         // 사이드 패널
@@ -350,8 +355,7 @@ class BadukApp {
             { id: 'lantern-1', type: 'lantern', x: 5, y: 20, hp: 5 },
             { id: 'lantern-2', type: 'lantern', x: 90, y: 25, hp: 5 },
             { id: 'pot-1', type: 'pot', x: 8, y: 70, hp: 3 },
-            { id: 'pot-2', type: 'pot', x: 88, y: 75, hp: 3 },
-            { id: 'crystal', type: 'crystal', x: 50, y: 8, hp: 10 }
+            { id: 'pot-2', type: 'pot', x: 88, y: 75, hp: 3 }
         ];
 
         this.bgObjects = {};
@@ -429,15 +433,21 @@ class BadukApp {
     }
 
     handleCanvasClick(e) {
-        if (this.game.gameOver) return;
-        if (this.mode === 'ai' && this.ai.isMyTurn()) return;
-
         const rect = this.canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
         const pos = this.canvasToBoard(x, y);
 
         if (!pos) return;
+
+        // 개가 모드
+        if (this.countingMode) {
+            this.handleCountingClick(pos.x, pos.y);
+            return;
+        }
+
+        if (this.game.gameOver) return;
+        if (this.mode === 'ai' && this.ai.isMyTurn()) return;
 
         // 착수 금지 위치면 경고음
         if (!this.game.isValidMove(pos.x, pos.y)) {
@@ -602,6 +612,14 @@ class BadukApp {
         const size = parseInt(document.getElementById('board-size').value);
         this.game.reset(size);
         this.lastMove = null;
+
+        // 개가 모드 리셋
+        this.countingMode = false;
+        this.deadStones.clear();
+        const countBtn = document.getElementById('btn-count');
+        countBtn.classList.remove('active');
+        countBtn.textContent = '개가';
+
         this.resizeCanvas();
         this.clearCapturedStones();
         this.updateUI();
@@ -681,6 +699,76 @@ class BadukApp {
 
         if (this.lastMove) {
             this.drawLastMoveMarker(this.lastMove.x, this.lastMove.y);
+        }
+
+        // 개가 모드: 사석 표시 및 집 시각화
+        if (this.countingMode) {
+            this.drawDeadStones();
+            this.drawTerritory();
+        }
+    }
+
+    drawDeadStones() {
+        const ctx = this.ctx;
+
+        this.deadStones.forEach(key => {
+            const [x, y] = key.split(',').map(Number);
+            const pos = this.boardToCanvas(x, y);
+
+            // X 표시
+            ctx.strokeStyle = '#ff0000';
+            ctx.lineWidth = 3;
+            const size = this.stoneRadius * 0.6;
+
+            ctx.beginPath();
+            ctx.moveTo(pos.x - size, pos.y - size);
+            ctx.lineTo(pos.x + size, pos.y + size);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(pos.x + size, pos.y - size);
+            ctx.lineTo(pos.x - size, pos.y + size);
+            ctx.stroke();
+        });
+    }
+
+    drawTerritory() {
+        // 사석 제거한 임시 보드
+        const tempBoard = this.game.copyBoard();
+        this.deadStones.forEach(key => {
+            const [x, y] = key.split(',').map(Number);
+            tempBoard[x][y] = null;
+        });
+
+        // 집 영역 계산
+        const visited = new Set();
+
+        for (let x = 0; x < this.game.size; x++) {
+            for (let y = 0; y < this.game.size; y++) {
+                if (tempBoard[x][y] === null && !visited.has(`${x},${y}`)) {
+                    const result = this.floodFillTerritoryOnBoard(tempBoard, x, y, visited);
+                    if (result.owner) {
+                        result.area.forEach(pos => {
+                            this.drawTerritoryMark(pos.x, pos.y, result.owner);
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    drawTerritoryMark(x, y, owner) {
+        const ctx = this.ctx;
+        const pos = this.boardToCanvas(x, y);
+        const size = this.cellSize * 0.2;
+
+        ctx.fillStyle = owner === 'black' ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.9)';
+        ctx.fillRect(pos.x - size, pos.y - size, size * 2, size * 2);
+
+        if (owner === 'white') {
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(pos.x - size, pos.y - size, size * 2, size * 2);
         }
     }
 
@@ -991,6 +1079,168 @@ class BadukApp {
         }
 
         event.target.value = '';
+    }
+
+    // 개가(계가) 모드
+    toggleCountingMode() {
+        this.countingMode = !this.countingMode;
+        const btn = document.getElementById('btn-count');
+
+        if (this.countingMode) {
+            btn.classList.add('active');
+            btn.textContent = '확정';
+            this.deadStones.clear();
+            this.showToast('사석을 클릭하여 표시하세요');
+        } else {
+            btn.classList.remove('active');
+            btn.textContent = '개가';
+            this.showCountingResult();
+        }
+        this.render();
+    }
+
+    handleCountingClick(x, y) {
+        const stone = this.game.board[x][y];
+        if (!stone) return;
+
+        const key = `${x},${y}`;
+        const group = this.getStoneGroup(x, y);
+
+        // 그룹 전체를 사석으로 토글
+        const isCurrentlyDead = this.deadStones.has(key);
+        group.forEach(pos => {
+            const k = `${pos.x},${pos.y}`;
+            if (isCurrentlyDead) {
+                this.deadStones.delete(k);
+            } else {
+                this.deadStones.add(k);
+            }
+        });
+
+        if (this.settings.soundEnabled) {
+            this.soundManager.playStoneSound();
+        }
+        this.render();
+    }
+
+    getStoneGroup(x, y) {
+        const color = this.game.board[x][y];
+        if (!color) return [];
+
+        const group = [];
+        const visited = new Set();
+        const stack = [{ x, y }];
+
+        while (stack.length > 0) {
+            const pos = stack.pop();
+            const key = `${pos.x},${pos.y}`;
+
+            if (visited.has(key)) continue;
+            visited.add(key);
+
+            if (this.game.board[pos.x][pos.y] === color) {
+                group.push(pos);
+                const neighbors = this.game.getNeighbors(pos.x, pos.y);
+                for (const [nx, ny] of neighbors) {
+                    if (!visited.has(`${nx},${ny}`)) {
+                        stack.push({ x: nx, y: ny });
+                    }
+                }
+            }
+        }
+
+        return group;
+    }
+
+    showCountingResult() {
+        // 사석 제거 후 점수 계산
+        const tempBoard = this.game.copyBoard();
+        const tempCaptures = { ...this.game.captures };
+
+        // 사석을 보드에서 제거하고 상대방 캡처로 카운트
+        this.deadStones.forEach(key => {
+            const [x, y] = key.split(',').map(Number);
+            const color = tempBoard[x][y];
+            if (color) {
+                const opponent = color === 'black' ? 'white' : 'black';
+                tempCaptures[opponent]++;
+                tempBoard[x][y] = null;
+            }
+        });
+
+        // 집 계산
+        const territory = this.calculateTerritoryOnBoard(tempBoard);
+
+        // 덤 6.5
+        const komi = 6.5;
+        const blackScore = territory.black + tempCaptures.black;
+        const whiteScore = territory.white + tempCaptures.white + komi;
+
+        const winner = blackScore > whiteScore ? '흑' : '백';
+        const diff = Math.abs(blackScore - whiteScore).toFixed(1);
+
+        // 결과 표시
+        document.getElementById('black-score').textContent = blackScore.toFixed(1);
+        document.getElementById('white-score').textContent = whiteScore.toFixed(1);
+        document.getElementById('gameover-message').textContent = `${winner} ${diff}집 승!`;
+        document.getElementById('gameover-modal').classList.add('show');
+
+        this.game.gameOver = true;
+    }
+
+    calculateTerritoryOnBoard(board) {
+        const territory = { black: 0, white: 0 };
+        const visited = new Set();
+
+        for (let x = 0; x < this.game.size; x++) {
+            for (let y = 0; y < this.game.size; y++) {
+                if (board[x][y] === null && !visited.has(`${x},${y}`)) {
+                    const result = this.floodFillTerritoryOnBoard(board, x, y, visited);
+                    if (result.owner === 'black') {
+                        territory.black += result.size;
+                    } else if (result.owner === 'white') {
+                        territory.white += result.size;
+                    }
+                }
+            }
+        }
+
+        return territory;
+    }
+
+    floodFillTerritoryOnBoard(board, startX, startY, visited) {
+        const stack = [{ x: startX, y: startY }];
+        const area = [];
+        let touchesBlack = false;
+        let touchesWhite = false;
+
+        while (stack.length > 0) {
+            const { x, y } = stack.pop();
+            const key = `${x},${y}`;
+
+            if (visited.has(key)) continue;
+            visited.add(key);
+
+            if (board[x][y] === null) {
+                area.push({ x, y });
+                const neighbors = this.game.getNeighbors(x, y);
+                for (const [nx, ny] of neighbors) {
+                    if (!visited.has(`${nx},${ny}`)) {
+                        stack.push({ x: nx, y: ny });
+                    }
+                }
+            } else if (board[x][y] === 'black') {
+                touchesBlack = true;
+            } else if (board[x][y] === 'white') {
+                touchesWhite = true;
+            }
+        }
+
+        let owner = null;
+        if (touchesBlack && !touchesWhite) owner = 'black';
+        else if (touchesWhite && !touchesBlack) owner = 'white';
+
+        return { size: area.length, owner, area };
     }
 
     // 설정 저장/불러오기
