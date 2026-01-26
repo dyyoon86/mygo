@@ -488,22 +488,55 @@ class BadukApp {
     }
 
     newGame() {
-        const size = parseInt(document.getElementById('board-size').value);
-        this.game.reset(size);
-        this.lastMove = null;
+        // 커튼 이펙트 시작
+        this.playCurtainEffect(() => {
+            const size = parseInt(document.getElementById('board-size').value);
+            this.game.reset(size);
+            this.lastMove = null;
 
-        this.countingMode = false;
-        this.deadStones.clear();
-        const countBtn = document.getElementById('btn-count');
-        countBtn.classList.remove('active');
-        countBtn.textContent = '개가';
+            this.countingMode = false;
+            this.deadStones.clear();
+            const countBtn = document.getElementById('btn-count');
+            countBtn.classList.remove('active');
+            countBtn.textContent = '개가';
 
-        this.resizeCanvas();
-        this.updateUI();
+            this.resizeCanvas();
+            this.updateUI();
 
-        if (this.mode === 'ai' && this.ai.color === 'black') {
-            this.aiMove();
-        }
+            if (this.mode === 'ai' && this.ai.color === 'black') {
+                setTimeout(() => this.aiMove(), 500);
+            }
+        });
+    }
+
+    playCurtainEffect(callback) {
+        const overlay = document.getElementById('curtain-overlay');
+
+        // 커튼 닫기
+        overlay.classList.add('active', 'closing');
+        overlay.classList.remove('opening');
+
+        // 커튼이 닫힌 후 텍스트 표시
+        setTimeout(() => {
+            overlay.classList.add('show-text');
+        }, 600);
+
+        // 콜백 실행 (게임 리셋)
+        setTimeout(() => {
+            if (callback) callback();
+        }, 900);
+
+        // 커튼 열기
+        setTimeout(() => {
+            overlay.classList.remove('show-text');
+            overlay.classList.remove('closing');
+            overlay.classList.add('opening');
+        }, 1200);
+
+        // 이펙트 종료
+        setTimeout(() => {
+            overlay.classList.remove('active', 'opening');
+        }, 2000);
     }
 
     // 렌더링
