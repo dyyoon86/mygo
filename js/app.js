@@ -182,8 +182,8 @@ class BadukApp {
     resizeCanvas() {
         const isMobile = window.innerWidth <= 600;
         const maxSize = isMobile
-            ? Math.min(window.innerWidth - 40, window.innerHeight - 250)
-            : Math.min(window.innerWidth - 100, window.innerHeight - 200, 550);
+            ? Math.min(window.innerWidth - 30, window.innerHeight - 200)
+            : Math.min(window.innerWidth - 60, window.innerHeight - 160, 650);
         const size = this.game.size;
 
         this.cellSize = Math.floor((maxSize - this.padding * 2) / (size - 1));

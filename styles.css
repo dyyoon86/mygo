@@ -21,14 +21,14 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    padding: 20px;
+    padding: 10px;
 }
 
 .board-wrapper {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 15px;
+    gap: 10px;
 }
 
 /* 턴 표시 */
@@ -393,11 +393,11 @@ body {
 /* 반응형 */
 @media (max-width: 600px) {
     .game-container {
-        padding: 15px;
+        padding: 8px;
     }
 
     .board-wrapper {
-        gap: 12px;
+        gap: 8px;
     }
 
     .turn-indicator {
