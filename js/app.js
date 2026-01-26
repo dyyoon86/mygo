@@ -5,7 +5,7 @@ class SoundManager {
     constructor() {
         this.audioContext = null;
         this.initialized = false;
-        this.stoneBuffers = []; // 여러 소리 파일
+        this.stoneBuffer = null;
         this.loadSounds();
     }
 
@@ -19,42 +19,28 @@ class SoundManager {
         }
     }
 
-    // 여러 사운드 파일 미리 로드
+    // 사운드 파일 로드
     async loadSounds() {
-        this.init();
-        if (!this.audioContext) return;
-
-        // 13개의 소리 파일 로드
-        const soundFiles = [
-            'sounds/stone_01.wav', 'sounds/stone_02.wav', 'sounds/stone_03.wav',
-            'sounds/stone_04.wav', 'sounds/stone_05.wav', 'sounds/stone_06.wav',
-            'sounds/stone_07.wav', 'sounds/stone_08.wav', 'sounds/stone_09.wav',
-            'sounds/stone_10.wav', 'sounds/stone_11.wav', 'sounds/stone_12.wav',
-            'sounds/stone_13.wav'
-        ];
-
-        for (const file of soundFiles) {
-            try {
-                const response = await fetch(file);
-                const arrayBuffer = await response.arrayBuffer();
-                const buffer = await this.audioContext.decodeAudioData(arrayBuffer);
-                this.stoneBuffers.push(buffer);
-            } catch (e) {
-                // 개별 파일 로드 실패 무시
+        try {
+            const response = await fetch('sounds/stone_place.wav');
+            const arrayBuffer = await response.arrayBuffer();
+            this.init();
+            if (this.audioContext) {
+                this.stoneBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+                console.log('바둑돌 소리 로드됨');
             }
+        } catch (e) {
+            console.warn('소리 파일 로드 실패, 합성음 사용');
         }
-        console.log(`${this.stoneBuffers.length}개 바둑돌 소리 로드됨`);
     }
 
     playStoneSound() {
         if (!this.initialized) this.init();
         if (!this.audioContext) return;
 
-        // 랜덤하게 소리 선택
-        if (this.stoneBuffers.length > 0) {
-            const buffer = this.stoneBuffers[Math.floor(Math.random() * this.stoneBuffers.length)];
+        if (this.stoneBuffer) {
             const source = this.audioContext.createBufferSource();
-            source.buffer = buffer;
+            source.buffer = this.stoneBuffer;
 
             const gain = this.audioContext.createGain();
             gain.gain.value = 1.0;
