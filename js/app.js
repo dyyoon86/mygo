@@ -1,5 +1,6 @@
 /**
  * 바둑돌 사운드 매니저 (Web Audio API)
+ * 실제 바둑돌 소리를 모방
  */
 class SoundManager {
     constructor() {
@@ -17,7 +18,7 @@ class SoundManager {
         }
     }
 
-    // 바둑돌 착수 소리 (나무 바둑판에 돌 놓는 소리)
+    // 바둑돌 착수 소리 (슬레이트/조개 돌이 나무판에 놓이는 "딱" 소리)
     playStoneSound() {
         if (!this.initialized) this.init();
         if (!this.audioContext) return;
@@ -25,114 +26,127 @@ class SoundManager {
         const ctx = this.audioContext;
         const now = ctx.currentTime;
 
-        // 메인 임팩트 사운드 (돌이 판에 닿는 소리)
-        const osc1 = ctx.createOscillator();
-        const gain1 = ctx.createGain();
-        osc1.type = 'sine';
-        osc1.frequency.setValueAtTime(800, now);
-        osc1.frequency.exponentialRampToValueAtTime(200, now + 0.08);
-        gain1.gain.setValueAtTime(0.4, now);
-        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
-        osc1.connect(gain1);
-        gain1.connect(ctx.destination);
-        osc1.start(now);
-        osc1.stop(now + 0.12);
+        // 1. 초기 임팩트 - 날카로운 "딱" 소리
+        const impact = ctx.createOscillator();
+        const impactGain = ctx.createGain();
+        impact.type = 'square';
+        impact.frequency.setValueAtTime(1800, now);
+        impact.frequency.exponentialRampToValueAtTime(400, now + 0.015);
+        impactGain.gain.setValueAtTime(0.3, now);
+        impactGain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+        impact.connect(impactGain);
+        impactGain.connect(ctx.destination);
+        impact.start(now);
+        impact.stop(now + 0.03);
 
-        // 나무 울림 (보드 공명)
-        const osc2 = ctx.createOscillator();
-        const gain2 = ctx.createGain();
-        osc2.type = 'triangle';
-        osc2.frequency.setValueAtTime(180, now);
-        osc2.frequency.exponentialRampToValueAtTime(120, now + 0.15);
-        gain2.gain.setValueAtTime(0.2, now);
-        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
-        osc2.connect(gain2);
-        gain2.connect(ctx.destination);
-        osc2.start(now);
-        osc2.stop(now + 0.2);
+        // 2. 돌의 울림 - 중저음 공명
+        const resonance = ctx.createOscillator();
+        const resGain = ctx.createGain();
+        resonance.type = 'sine';
+        resonance.frequency.setValueAtTime(220, now);
+        resonance.frequency.exponentialRampToValueAtTime(180, now + 0.08);
+        resGain.gain.setValueAtTime(0.15, now + 0.01);
+        resGain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+        resonance.connect(resGain);
+        resGain.connect(ctx.destination);
+        resonance.start(now);
+        resonance.stop(now + 0.1);
 
-        // 클릭 노이즈 (돌 부딪히는 소리)
-        const bufferSize = ctx.sampleRate * 0.05;
-        const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-        const output = noiseBuffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) {
-            output[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.1));
+        // 3. 나무판 공명 - 깊은 울림
+        const wood = ctx.createOscillator();
+        const woodGain = ctx.createGain();
+        wood.type = 'triangle';
+        wood.frequency.setValueAtTime(120, now);
+        wood.frequency.exponentialRampToValueAtTime(80, now + 0.12);
+        woodGain.gain.setValueAtTime(0.12, now + 0.005);
+        woodGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+        wood.connect(woodGain);
+        woodGain.connect(ctx.destination);
+        wood.start(now);
+        wood.stop(now + 0.15);
+
+        // 4. 클릭 노이즈 - 돌 표면 질감
+        const noiseLen = ctx.sampleRate * 0.02;
+        const noiseBuffer = ctx.createBuffer(1, noiseLen, ctx.sampleRate);
+        const noiseData = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < noiseLen; i++) {
+            noiseData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (noiseLen * 0.15));
         }
         const noise = ctx.createBufferSource();
         noise.buffer = noiseBuffer;
-        const noiseGain = ctx.createGain();
         const noiseFilter = ctx.createBiquadFilter();
-        noiseFilter.type = 'bandpass';
-        noiseFilter.frequency.value = 2000;
-        noiseFilter.Q.value = 1;
-        noiseGain.gain.setValueAtTime(0.15, now);
-        noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+        noiseFilter.type = 'highpass';
+        noiseFilter.frequency.value = 3000;
+        const noiseGain = ctx.createGain();
+        noiseGain.gain.setValueAtTime(0.2, now);
+        noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.025);
         noise.connect(noiseFilter);
         noiseFilter.connect(noiseGain);
         noiseGain.connect(ctx.destination);
         noise.start(now);
     }
 
-    // 돌 따먹는 소리 (여러 돌이 치워지는 소리)
+    // 돌 따먹는 소리 - 경쾌한 "찰칵찰칵" 소리
     playCaptureSound(count = 1) {
         if (!this.initialized) this.init();
         if (!this.audioContext) return;
 
         const ctx = this.audioContext;
         const now = ctx.currentTime;
+        const num = Math.min(count, 6);
 
-        // 잡힌 돌 개수에 따라 소리 조절
-        const intensity = Math.min(count, 5) / 5;
+        // 여러 돌이 부딪히며 치워지는 경쾌한 소리
+        for (let i = 0; i < num; i++) {
+            const delay = i * 0.04 + Math.random() * 0.02;
 
-        // 돌 굴러가는 소리 (여러 음)
-        for (let i = 0; i < Math.min(count, 4); i++) {
-            const delay = i * 0.03;
+            // 높은 음의 경쾌한 클릭
+            const click = ctx.createOscillator();
+            const clickGain = ctx.createGain();
+            click.type = 'sine';
+            const freq = 1200 + Math.random() * 600; // 높은 주파수로 경쾌하게
+            click.frequency.setValueAtTime(freq, now + delay);
+            click.frequency.exponentialRampToValueAtTime(freq * 0.4, now + delay + 0.05);
+            clickGain.gain.setValueAtTime(0.15, now + delay);
+            clickGain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.06);
+            click.connect(clickGain);
+            clickGain.connect(ctx.destination);
+            click.start(now + delay);
+            click.stop(now + delay + 0.06);
 
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.type = 'sine';
-            const baseFreq = 400 + Math.random() * 200;
-            osc.frequency.setValueAtTime(baseFreq, now + delay);
-            osc.frequency.exponentialRampToValueAtTime(baseFreq * 0.3, now + delay + 0.15);
-            gain.gain.setValueAtTime(0.15 * (1 - i * 0.2), now + delay);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.15);
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.start(now + delay);
-            osc.stop(now + delay + 0.15);
+            // 부딪히는 노이즈
+            const clickNoiseLen = ctx.sampleRate * 0.015;
+            const clickNoiseBuffer = ctx.createBuffer(1, clickNoiseLen, ctx.sampleRate);
+            const clickNoiseData = clickNoiseBuffer.getChannelData(0);
+            for (let j = 0; j < clickNoiseLen; j++) {
+                clickNoiseData[j] = (Math.random() * 2 - 1) * Math.exp(-j / (clickNoiseLen * 0.2));
+            }
+            const clickNoise = ctx.createBufferSource();
+            clickNoise.buffer = clickNoiseBuffer;
+            const clickNoiseFilter = ctx.createBiquadFilter();
+            clickNoiseFilter.type = 'bandpass';
+            clickNoiseFilter.frequency.value = 4000;
+            clickNoiseFilter.Q.value = 2;
+            const clickNoiseGain = ctx.createGain();
+            clickNoiseGain.gain.setValueAtTime(0.1, now + delay);
+            clickNoiseGain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.02);
+            clickNoise.connect(clickNoiseFilter);
+            clickNoiseFilter.connect(clickNoiseGain);
+            clickNoiseGain.connect(ctx.destination);
+            clickNoise.start(now + delay);
         }
 
-        // 그릇에 담기는 소리 (통 울림)
-        const osc2 = ctx.createOscillator();
-        const gain2 = ctx.createGain();
-        osc2.type = 'triangle';
-        osc2.frequency.setValueAtTime(250, now + 0.1);
-        osc2.frequency.exponentialRampToValueAtTime(150, now + 0.3);
-        gain2.gain.setValueAtTime(0.1 + intensity * 0.1, now + 0.1);
-        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-        osc2.connect(gain2);
-        gain2.connect(ctx.destination);
-        osc2.start(now + 0.1);
-        osc2.stop(now + 0.35);
-
-        // 딸깍 소리
-        const clickBuffer = ctx.createBuffer(1, ctx.sampleRate * 0.08, ctx.sampleRate);
-        const clickData = clickBuffer.getChannelData(0);
-        for (let i = 0; i < clickData.length; i++) {
-            clickData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (clickData.length * 0.05));
-        }
-        const click = ctx.createBufferSource();
-        click.buffer = clickBuffer;
-        const clickGain = ctx.createGain();
-        const clickFilter = ctx.createBiquadFilter();
-        clickFilter.type = 'highpass';
-        clickFilter.frequency.value = 1500;
-        clickGain.gain.setValueAtTime(0.08 + intensity * 0.05, now + 0.08);
-        clickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
-        click.connect(clickFilter);
-        clickFilter.connect(clickGain);
-        clickGain.connect(ctx.destination);
-        click.start(now + 0.08);
+        // 마무리 - 그릇에 담기는 가벼운 울림
+        const bowl = ctx.createOscillator();
+        const bowlGain = ctx.createGain();
+        bowl.type = 'sine';
+        bowl.frequency.setValueAtTime(800, now + num * 0.04 + 0.05);
+        bowl.frequency.exponentialRampToValueAtTime(400, now + num * 0.04 + 0.15);
+        bowlGain.gain.setValueAtTime(0.08, now + num * 0.04 + 0.05);
+        bowlGain.gain.exponentialRampToValueAtTime(0.001, now + num * 0.04 + 0.2);
+        bowl.connect(bowlGain);
+        bowlGain.connect(ctx.destination);
+        bowl.start(now + num * 0.04 + 0.05);
+        bowl.stop(now + num * 0.04 + 0.2);
     }
 }
 
