@@ -24,44 +24,38 @@ class SoundManager {
         const ctx = this.audioContext;
         const now = ctx.currentTime;
 
-        // 임팩트
-        const impact = ctx.createOscillator();
-        const impactGain = ctx.createGain();
-        impact.type = 'square';
-        impact.frequency.setValueAtTime(1800, now);
-        impact.frequency.exponentialRampToValueAtTime(400, now + 0.015);
-        impactGain.gain.setValueAtTime(0.3, now);
-        impactGain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
-        impact.connect(impactGain);
-        impactGain.connect(ctx.destination);
-        impact.start(now);
-        impact.stop(now + 0.03);
+        // 짧고 날카로운 "탁!" 소리 - 노이즈 기반
+        const bufferSize = ctx.sampleRate * 0.04; // 40ms
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
 
-        // 공명
-        const resonance = ctx.createOscillator();
-        const resGain = ctx.createGain();
-        resonance.type = 'sine';
-        resonance.frequency.setValueAtTime(220, now);
-        resonance.frequency.exponentialRampToValueAtTime(180, now + 0.08);
-        resGain.gain.setValueAtTime(0.15, now + 0.01);
-        resGain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
-        resonance.connect(resGain);
-        resGain.connect(ctx.destination);
-        resonance.start(now);
-        resonance.stop(now + 0.1);
+        // 임펄스 + 빠른 감쇠
+        for (let i = 0; i < bufferSize; i++) {
+            const t = i / ctx.sampleRate;
+            // 초반 강한 임팩트 + 빠른 감쇠
+            const envelope = Math.exp(-t * 80);
+            // 노이즈 + 약간의 톤
+            const noise = (Math.random() * 2 - 1) * 0.5;
+            const tone = Math.sin(2 * Math.PI * 400 * t) * 0.5;
+            data[i] = (noise + tone) * envelope;
+        }
 
-        // 나무 울림
-        const wood = ctx.createOscillator();
-        const woodGain = ctx.createGain();
-        wood.type = 'triangle';
-        wood.frequency.setValueAtTime(120, now);
-        wood.frequency.exponentialRampToValueAtTime(80, now + 0.12);
-        woodGain.gain.setValueAtTime(0.12, now + 0.005);
-        woodGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
-        wood.connect(woodGain);
-        woodGain.connect(ctx.destination);
-        wood.start(now);
-        wood.stop(now + 0.15);
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+
+        // 하이패스 필터로 날카롭게
+        const highpass = ctx.createBiquadFilter();
+        highpass.type = 'highpass';
+        highpass.frequency.value = 800;
+
+        // 볼륨
+        const gain = ctx.createGain();
+        gain.gain.value = 0.6;
+
+        source.connect(highpass);
+        highpass.connect(gain);
+        gain.connect(ctx.destination);
+        source.start(now);
     }
 
     playCaptureSound(count = 1) {
@@ -70,35 +64,57 @@ class SoundManager {
 
         const ctx = this.audioContext;
         const now = ctx.currentTime;
-        const num = Math.min(count, 6);
+        const num = Math.min(count, 5);
 
+        // 각 돌마다 경쾌한 클릭 소리
         for (let i = 0; i < num; i++) {
-            const delay = i * 0.04 + Math.random() * 0.02;
-            const click = ctx.createOscillator();
-            const clickGain = ctx.createGain();
-            click.type = 'sine';
-            const freq = 1200 + Math.random() * 600;
-            click.frequency.setValueAtTime(freq, now + delay);
-            click.frequency.exponentialRampToValueAtTime(freq * 0.4, now + delay + 0.05);
-            clickGain.gain.setValueAtTime(0.15, now + delay);
-            clickGain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.06);
-            click.connect(clickGain);
-            clickGain.connect(ctx.destination);
-            click.start(now + delay);
-            click.stop(now + delay + 0.06);
+            const delay = i * 0.06;
+
+            // 짧은 클릭 버퍼 생성
+            const bufferSize = ctx.sampleRate * 0.025;
+            const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+
+            for (let j = 0; j < bufferSize; j++) {
+                const t = j / ctx.sampleRate;
+                const envelope = Math.exp(-t * 120);
+                const click = Math.sin(2 * Math.PI * (800 + i * 100) * t);
+                data[j] = click * envelope * 0.3;
+            }
+
+            const source = ctx.createBufferSource();
+            source.buffer = buffer;
+
+            const gain = ctx.createGain();
+            gain.gain.value = 0.4;
+
+            source.connect(gain);
+            gain.connect(ctx.destination);
+            source.start(now + delay);
         }
 
-        const bowl = ctx.createOscillator();
+        // 마지막에 그릇에 담기는 소리
+        const bufferSize = ctx.sampleRate * 0.08;
+        const bowlBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const bowlData = bowlBuffer.getChannelData(0);
+
+        for (let i = 0; i < bufferSize; i++) {
+            const t = i / ctx.sampleRate;
+            const envelope = Math.exp(-t * 40);
+            const tone = Math.sin(2 * Math.PI * 600 * t) * 0.3 +
+                        Math.sin(2 * Math.PI * 900 * t) * 0.2;
+            bowlData[i] = tone * envelope;
+        }
+
+        const bowlSource = ctx.createBufferSource();
+        bowlSource.buffer = bowlBuffer;
+
         const bowlGain = ctx.createGain();
-        bowl.type = 'sine';
-        bowl.frequency.setValueAtTime(800, now + num * 0.04 + 0.05);
-        bowl.frequency.exponentialRampToValueAtTime(400, now + num * 0.04 + 0.15);
-        bowlGain.gain.setValueAtTime(0.08, now + num * 0.04 + 0.05);
-        bowlGain.gain.exponentialRampToValueAtTime(0.001, now + num * 0.04 + 0.2);
-        bowl.connect(bowlGain);
+        bowlGain.gain.value = 0.3;
+
+        bowlSource.connect(bowlGain);
         bowlGain.connect(ctx.destination);
-        bowl.start(now + num * 0.04 + 0.05);
-        bowl.stop(now + num * 0.04 + 0.2);
+        bowlSource.start(now + num * 0.06 + 0.03);
     }
 
     playJarSound() {
@@ -536,18 +552,15 @@ class BadukApp {
         ctx.fillStyle = skin.boardColor;
         ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // 나무 질감 효과
-        ctx.globalAlpha = 0.1;
-        for (let i = 0; i < 50; i++) {
-            ctx.fillStyle = Math.random() > 0.5 ? '#000' : '#fff';
-            ctx.fillRect(
-                Math.random() * this.canvas.width,
-                Math.random() * this.canvas.height,
-                Math.random() * 3,
-                Math.random() * 100
-            );
-        }
-        ctx.globalAlpha = 1;
+        // 미세한 그라디언트 테두리 효과 (정적)
+        const edgeGrad = ctx.createRadialGradient(
+            this.canvas.width / 2, this.canvas.height / 2, 0,
+            this.canvas.width / 2, this.canvas.height / 2, this.canvas.width * 0.7
+        );
+        edgeGrad.addColorStop(0, 'transparent');
+        edgeGrad.addColorStop(1, 'rgba(0,0,0,0.15)');
+        ctx.fillStyle = edgeGrad;
+        ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
         // 격자
         ctx.strokeStyle = skin.lineColor;
