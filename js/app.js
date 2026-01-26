@@ -24,37 +24,82 @@ class SoundManager {
         const ctx = this.audioContext;
         const now = ctx.currentTime;
 
-        // 짧고 날카로운 "탁!" 소리 - 노이즈 기반
-        const bufferSize = ctx.sampleRate * 0.04; // 40ms
+        // 실제 바둑돌 "탁!" 소리 - 짧은 임팩트
+        const duration = 0.06;
+        const bufferSize = Math.floor(ctx.sampleRate * duration);
         const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
         const data = buffer.getChannelData(0);
 
-        // 임펄스 + 빠른 감쇠
         for (let i = 0; i < bufferSize; i++) {
             const t = i / ctx.sampleRate;
-            // 초반 강한 임팩트 + 빠른 감쇠
-            const envelope = Math.exp(-t * 80);
-            // 노이즈 + 약간의 톤
-            const noise = (Math.random() * 2 - 1) * 0.5;
-            const tone = Math.sin(2 * Math.PI * 400 * t) * 0.5;
-            data[i] = (noise + tone) * envelope;
+            // 매우 빠른 어택과 감쇠
+            const attack = Math.min(1, t * 500);
+            const decay = Math.exp(-t * 100);
+            const envelope = attack * decay;
+            // 돌 부딪히는 임팩트 주파수 (중저음)
+            const impact = Math.sin(2 * Math.PI * 180 * t) * 0.4;
+            const click = Math.sin(2 * Math.PI * 2500 * t) * Math.exp(-t * 300) * 0.6;
+            data[i] = (impact + click) * envelope;
         }
 
         const source = ctx.createBufferSource();
         source.buffer = buffer;
 
-        // 하이패스 필터로 날카롭게
-        const highpass = ctx.createBiquadFilter();
-        highpass.type = 'highpass';
-        highpass.frequency.value = 800;
-
-        // 볼륨
         const gain = ctx.createGain();
-        gain.gain.value = 0.6;
+        gain.gain.value = 0.8;
 
-        source.connect(highpass);
-        highpass.connect(gain);
+        source.connect(gain);
         gain.connect(ctx.destination);
+        source.start(now);
+    }
+
+    playInvalidSound() {
+        if (!this.initialized) this.init();
+        if (!this.audioContext) return;
+
+        const ctx = this.audioContext;
+        const now = ctx.currentTime;
+
+        // 경고 비프음
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(200, now);
+        osc.frequency.setValueAtTime(150, now + 0.1);
+
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.2);
+    }
+
+    playBreakSound() {
+        if (!this.initialized) this.init();
+        if (!this.audioContext) return;
+
+        const ctx = this.audioContext;
+        const now = ctx.currentTime;
+
+        // 깨지는 소리
+        const bufferSize = ctx.sampleRate * 0.3;
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+
+        for (let i = 0; i < bufferSize; i++) {
+            const t = i / ctx.sampleRate;
+            const envelope = Math.exp(-t * 15);
+            const noise = (Math.random() * 2 - 1);
+            const crackle = Math.sin(2 * Math.PI * (800 + Math.random() * 400) * t);
+            data[i] = (noise * 0.5 + crackle * 0.5) * envelope * 0.4;
+        }
+
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(ctx.destination);
         source.start(now);
     }
 
@@ -202,7 +247,10 @@ class BadukApp {
 
     resizeCanvas() {
         const container = this.canvas.parentElement;
-        const maxSize = Math.min(window.innerWidth - 300, window.innerHeight - 250, 550);
+        const isMobile = window.innerWidth <= 700;
+        const maxSize = isMobile
+            ? Math.min(window.innerWidth - 50, window.innerHeight - 200)
+            : Math.min(window.innerWidth - 300, window.innerHeight - 250, 550);
         const size = this.game.size;
 
         this.cellSize = Math.floor((maxSize - this.padding * 2) / (size - 1));
@@ -235,6 +283,14 @@ class BadukApp {
             document.getElementById('sgf-file-input').click();
         });
         document.getElementById('sgf-file-input').addEventListener('change', (e) => this.loadSGF(e));
+
+        // 모바일 메뉴 토글
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        if (mobileMenuBtn) {
+            mobileMenuBtn.addEventListener('click', () => {
+                document.querySelector('.side-panel').classList.toggle('show');
+            });
+        }
 
         // 설정
         document.getElementById('board-size').addEventListener('change', (e) => {
@@ -269,9 +325,84 @@ class BadukApp {
         });
         document.getElementById('btn-close-gameover').addEventListener('click', () => this.closeGameOver());
 
+        // 모달 바깥 클릭시 닫기
+        document.getElementById('board-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'board-modal') {
+                this.closeBoardModal();
+            }
+        });
+
         // 항아리 클릭 이벤트
         document.getElementById('jar-black').addEventListener('click', () => this.onJarClick('black'));
         document.getElementById('jar-white').addEventListener('click', () => this.onJarClick('white'));
+
+        // 배경 상호작용 오브젝트 초기화
+        this.initBackgroundObjects();
+    }
+
+    // 배경 상호작용 오브젝트
+    initBackgroundObjects() {
+        const container = document.getElementById('bg-objects');
+        if (!container) return;
+
+        // 오브젝트들 정의
+        const objects = [
+            { id: 'lantern-1', type: 'lantern', x: 5, y: 20, hp: 5 },
+            { id: 'lantern-2', type: 'lantern', x: 90, y: 25, hp: 5 },
+            { id: 'pot-1', type: 'pot', x: 8, y: 70, hp: 3 },
+            { id: 'pot-2', type: 'pot', x: 88, y: 75, hp: 3 },
+            { id: 'crystal', type: 'crystal', x: 50, y: 8, hp: 10 }
+        ];
+
+        this.bgObjects = {};
+
+        objects.forEach(obj => {
+            const el = document.createElement('div');
+            el.className = `bg-object bg-${obj.type}`;
+            el.id = obj.id;
+            el.style.left = `${obj.x}%`;
+            el.style.top = `${obj.y}%`;
+            el.dataset.hp = obj.hp;
+            el.dataset.maxHp = obj.hp;
+
+            el.addEventListener('click', () => this.hitBgObject(obj.id));
+            container.appendChild(el);
+            this.bgObjects[obj.id] = { el, ...obj };
+        });
+    }
+
+    hitBgObject(id) {
+        const obj = this.bgObjects[id];
+        if (!obj || obj.broken) return;
+
+        obj.hp--;
+        obj.el.dataset.hp = obj.hp;
+
+        // 흔들림 효과
+        obj.el.classList.add('shake');
+        setTimeout(() => obj.el.classList.remove('shake'), 200);
+
+        if (obj.hp <= 0) {
+            // 깨짐
+            obj.broken = true;
+            obj.el.classList.add('broken');
+            if (this.settings.soundEnabled) {
+                this.soundManager.playBreakSound();
+            }
+            this.showToast(`${obj.type === 'lantern' ? '등불' : obj.type === 'pot' ? '화분' : '크리스탈'}이 깨졌습니다!`);
+
+            // 10초 후 복구
+            setTimeout(() => {
+                obj.hp = parseInt(obj.el.dataset.maxHp);
+                obj.el.dataset.hp = obj.hp;
+                obj.broken = false;
+                obj.el.classList.remove('broken');
+            }, 10000);
+        } else {
+            if (this.settings.soundEnabled) {
+                this.soundManager.playJarSound();
+            }
+        }
     }
 
     // 항아리 클릭 시 상호작용
@@ -307,6 +438,16 @@ class BadukApp {
         const pos = this.canvasToBoard(x, y);
 
         if (!pos) return;
+
+        // 착수 금지 위치면 경고음
+        if (!this.game.isValidMove(pos.x, pos.y)) {
+            if (this.settings.soundEnabled) {
+                this.soundManager.playInvalidSound();
+            }
+            this.showToast('착수할 수 없는 위치입니다');
+            return;
+        }
+
         this.makeMove(pos.x, pos.y);
     }
 
