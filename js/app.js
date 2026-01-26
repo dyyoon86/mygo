@@ -1,10 +1,12 @@
 /**
- * 바둑돌 사운드 매니저 (Web Audio API)
+ * 바둑돌 사운드 매니저 (실제 오디오 파일 사용)
  */
 class SoundManager {
     constructor() {
         this.audioContext = null;
         this.initialized = false;
+        this.stoneBuffer = null;
+        this.loadSounds();
     }
 
     init() {
@@ -17,37 +19,61 @@ class SoundManager {
         }
     }
 
+    // 사운드 파일 미리 로드
+    async loadSounds() {
+        try {
+            const response = await fetch('sounds/stone_place.wav');
+            const arrayBuffer = await response.arrayBuffer();
+            this.init();
+            if (this.audioContext) {
+                this.stoneBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+                console.log('Stone sound loaded successfully');
+            }
+        } catch (e) {
+            console.warn('Could not load stone sound file, using synthesized sound');
+        }
+    }
+
     playStoneSound() {
         if (!this.initialized) this.init();
         if (!this.audioContext) return;
 
+        // 실제 오디오 파일이 로드되었으면 사용
+        if (this.stoneBuffer) {
+            const source = this.audioContext.createBufferSource();
+            source.buffer = this.stoneBuffer;
+
+            const gain = this.audioContext.createGain();
+            gain.gain.value = 1.0;
+
+            source.connect(gain);
+            gain.connect(this.audioContext.destination);
+            source.start(0);
+            return;
+        }
+
+        // 파일 로드 실패시 합성음 사용 (폴백)
         const ctx = this.audioContext;
         const now = ctx.currentTime;
-
-        // 실제 바둑돌 "탁!" 소리 - 짧은 임팩트
-        const duration = 0.06;
+        const duration = 0.15;
         const bufferSize = Math.floor(ctx.sampleRate * duration);
         const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
         const data = buffer.getChannelData(0);
 
         for (let i = 0; i < bufferSize; i++) {
             const t = i / ctx.sampleRate;
-            // 매우 빠른 어택과 감쇠
-            const attack = Math.min(1, t * 500);
-            const decay = Math.exp(-t * 100);
-            const envelope = attack * decay;
-            // 돌 부딪히는 임팩트 주파수 (중저음)
-            const impact = Math.sin(2 * Math.PI * 180 * t) * 0.4;
-            const click = Math.sin(2 * Math.PI * 2500 * t) * Math.exp(-t * 300) * 0.6;
-            data[i] = (impact + click) * envelope;
+            const impact = Math.exp(-t * 200) * 0.8;
+            const woodResonance = Math.sin(2 * Math.PI * 220 * t) * Math.exp(-t * 30) * 0.3;
+            const stoneClick = Math.sin(2 * Math.PI * 1800 * t) * Math.exp(-t * 150) * 0.4;
+            const harmonic = Math.sin(2 * Math.PI * 440 * t) * Math.exp(-t * 50) * 0.15;
+            const noise = (Math.random() * 2 - 1) * Math.exp(-t * 300) * 0.1;
+            data[i] = (impact * stoneClick + woodResonance + harmonic + noise) * 0.7;
         }
 
         const source = ctx.createBufferSource();
         source.buffer = buffer;
-
         const gain = ctx.createGain();
-        gain.gain.value = 0.8;
-
+        gain.gain.value = 1.0;
         source.connect(gain);
         gain.connect(ctx.destination);
         source.start(now);

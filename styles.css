@@ -366,7 +366,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    z-index: 100;
+    z-index: 500;
 }
 
 .panel-btn {
@@ -603,7 +603,7 @@ body {
     transform: translateX(-50%);
     display: flex;
     gap: 15px;
-    z-index: 100;
+    z-index: 500;
 }
 
 .control-btn {
@@ -660,7 +660,7 @@ body {
     padding: 20px;
     border: 2px solid rgba(255,255,255,0.1);
     backdrop-filter: blur(10px);
-    z-index: 100;
+    z-index: 500;
     display: none;
 }
 
@@ -902,6 +902,9 @@ body {
     }
 
     .board-frame {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
         padding: 15px;
         margin: 0;
         transform: none;
