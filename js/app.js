@@ -1,6 +1,5 @@
 /**
  * 바둑돌 사운드 매니저 (Web Audio API)
- * 실제 바둑돌 소리를 모방
  */
 class SoundManager {
     constructor() {
@@ -18,7 +17,6 @@ class SoundManager {
         }
     }
 
-    // 바둑돌 착수 소리 (슬레이트/조개 돌이 나무판에 놓이는 "딱" 소리)
     playStoneSound() {
         if (!this.initialized) this.init();
         if (!this.audioContext) return;
@@ -26,7 +24,7 @@ class SoundManager {
         const ctx = this.audioContext;
         const now = ctx.currentTime;
 
-        // 1. 초기 임팩트 - 날카로운 "딱" 소리
+        // 임팩트
         const impact = ctx.createOscillator();
         const impactGain = ctx.createGain();
         impact.type = 'square';
@@ -39,7 +37,7 @@ class SoundManager {
         impact.start(now);
         impact.stop(now + 0.03);
 
-        // 2. 돌의 울림 - 중저음 공명
+        // 공명
         const resonance = ctx.createOscillator();
         const resGain = ctx.createGain();
         resonance.type = 'sine';
@@ -52,7 +50,7 @@ class SoundManager {
         resonance.start(now);
         resonance.stop(now + 0.1);
 
-        // 3. 나무판 공명 - 깊은 울림
+        // 나무 울림
         const wood = ctx.createOscillator();
         const woodGain = ctx.createGain();
         wood.type = 'triangle';
@@ -64,29 +62,8 @@ class SoundManager {
         woodGain.connect(ctx.destination);
         wood.start(now);
         wood.stop(now + 0.15);
-
-        // 4. 클릭 노이즈 - 돌 표면 질감
-        const noiseLen = ctx.sampleRate * 0.02;
-        const noiseBuffer = ctx.createBuffer(1, noiseLen, ctx.sampleRate);
-        const noiseData = noiseBuffer.getChannelData(0);
-        for (let i = 0; i < noiseLen; i++) {
-            noiseData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (noiseLen * 0.15));
-        }
-        const noise = ctx.createBufferSource();
-        noise.buffer = noiseBuffer;
-        const noiseFilter = ctx.createBiquadFilter();
-        noiseFilter.type = 'highpass';
-        noiseFilter.frequency.value = 3000;
-        const noiseGain = ctx.createGain();
-        noiseGain.gain.setValueAtTime(0.2, now);
-        noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.025);
-        noise.connect(noiseFilter);
-        noiseFilter.connect(noiseGain);
-        noiseGain.connect(ctx.destination);
-        noise.start(now);
     }
 
-    // 돌 따먹는 소리 - 경쾌한 "찰칵찰칵" 소리
     playCaptureSound(count = 1) {
         if (!this.initialized) this.init();
         if (!this.audioContext) return;
@@ -95,15 +72,12 @@ class SoundManager {
         const now = ctx.currentTime;
         const num = Math.min(count, 6);
 
-        // 여러 돌이 부딪히며 치워지는 경쾌한 소리
         for (let i = 0; i < num; i++) {
             const delay = i * 0.04 + Math.random() * 0.02;
-
-            // 높은 음의 경쾌한 클릭
             const click = ctx.createOscillator();
             const clickGain = ctx.createGain();
             click.type = 'sine';
-            const freq = 1200 + Math.random() * 600; // 높은 주파수로 경쾌하게
+            const freq = 1200 + Math.random() * 600;
             click.frequency.setValueAtTime(freq, now + delay);
             click.frequency.exponentialRampToValueAtTime(freq * 0.4, now + delay + 0.05);
             clickGain.gain.setValueAtTime(0.15, now + delay);
@@ -112,30 +86,8 @@ class SoundManager {
             clickGain.connect(ctx.destination);
             click.start(now + delay);
             click.stop(now + delay + 0.06);
-
-            // 부딪히는 노이즈
-            const clickNoiseLen = ctx.sampleRate * 0.015;
-            const clickNoiseBuffer = ctx.createBuffer(1, clickNoiseLen, ctx.sampleRate);
-            const clickNoiseData = clickNoiseBuffer.getChannelData(0);
-            for (let j = 0; j < clickNoiseLen; j++) {
-                clickNoiseData[j] = (Math.random() * 2 - 1) * Math.exp(-j / (clickNoiseLen * 0.2));
-            }
-            const clickNoise = ctx.createBufferSource();
-            clickNoise.buffer = clickNoiseBuffer;
-            const clickNoiseFilter = ctx.createBiquadFilter();
-            clickNoiseFilter.type = 'bandpass';
-            clickNoiseFilter.frequency.value = 4000;
-            clickNoiseFilter.Q.value = 2;
-            const clickNoiseGain = ctx.createGain();
-            clickNoiseGain.gain.setValueAtTime(0.1, now + delay);
-            clickNoiseGain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.02);
-            clickNoise.connect(clickNoiseFilter);
-            clickNoiseFilter.connect(clickNoiseGain);
-            clickNoiseGain.connect(ctx.destination);
-            clickNoise.start(now + delay);
         }
 
-        // 마무리 - 그릇에 담기는 가벼운 울림
         const bowl = ctx.createOscillator();
         const bowlGain = ctx.createGain();
         bowl.type = 'sine';
@@ -148,44 +100,73 @@ class SoundManager {
         bowl.start(now + num * 0.04 + 0.05);
         bowl.stop(now + num * 0.04 + 0.2);
     }
+
+    playJarSound() {
+        if (!this.initialized) this.init();
+        if (!this.audioContext) return;
+
+        const ctx = this.audioContext;
+        const now = ctx.currentTime;
+
+        // 항아리 두드리는 소리
+        for (let i = 0; i < 3; i++) {
+            const delay = i * 0.08;
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(600 + i * 100, now + delay);
+            osc.frequency.exponentialRampToValueAtTime(300, now + delay + 0.1);
+            gain.gain.setValueAtTime(0.1, now + delay);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.12);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now + delay);
+            osc.stop(now + delay + 0.12);
+        }
+    }
 }
+
+/**
+ * 프리미엄 보드 시스템
+ */
+const BOARD_SKINS = [
+    { id: 'classic', name: '클래식', price: 0, unlocked: true, boardColor: '#dcb35c', lineColor: '#2d2d2d' },
+    { id: 'jade', name: '비취', price: 0, unlocked: true, boardColor: '#3cb371', lineColor: '#1a3a2a' },
+    { id: 'dragon', name: '용의 둥지', price: 2900, unlocked: false, boardColor: '#cd5c5c', lineColor: '#4a1a1a' },
+    { id: 'celestial', name: '천상계', price: 3900, unlocked: false, boardColor: '#6495ed', lineColor: '#1a1a4a' },
+    { id: 'golden', name: '황금', price: 4900, unlocked: false, boardColor: '#ffd700', lineColor: '#4a4a1a' },
+];
 
 /**
  * 바둑 게임 메인 애플리케이션
  */
 class BadukApp {
     constructor() {
-        // 게임 인스턴스
         this.game = new BadukGame(19);
         this.ai = new BadukAI(this.game, 2);
         this.sgf = new SGFHandler();
         this.online = new BadukOnline(this.game);
         this.soundManager = new SoundManager();
 
-        // 게임 모드: 'local', 'ai', 'online'
         this.mode = 'local';
+        this.currentSkin = 'classic';
 
-        // 설정
         this.settings = {
-            boardTheme: 'classic',
-            soundEnabled: true,
-            showCoordinates: true,
-            showLastMove: true
+            soundEnabled: true
         };
 
-        // 캔버스 관련
         this.canvas = document.getElementById('board-canvas');
         this.ctx = this.canvas.getContext('2d');
 
-        // 보드 크기 관련
         this.cellSize = 30;
-        this.padding = 30;
+        this.padding = 25;
         this.stoneRadius = 13;
-
-        // 마지막 수 위치
         this.lastMove = null;
 
-        // 초기화
+        // 따낸 돌 시각화용
+        this.capturedStonesBlack = 0;
+        this.capturedStonesWhite = 0;
+
         this.init();
     }
 
@@ -193,6 +174,7 @@ class BadukApp {
         this.setupCanvas();
         this.bindEvents();
         this.loadSettings();
+        this.renderBoardSkins();
         this.updateUI();
         this.render();
     }
@@ -204,10 +186,9 @@ class BadukApp {
 
     resizeCanvas() {
         const container = this.canvas.parentElement;
-        const maxSize = Math.min(container.clientWidth - 20, 600);
-
-        // 보드 크기에 맞게 셀 크기 계산
+        const maxSize = Math.min(window.innerWidth - 300, window.innerHeight - 250, 550);
         const size = this.game.size;
+
         this.cellSize = Math.floor((maxSize - this.padding * 2) / (size - 1));
         this.stoneRadius = Math.floor(this.cellSize * 0.45);
 
@@ -219,66 +200,44 @@ class BadukApp {
     }
 
     bindEvents() {
-        // 캔버스 클릭
+        // 캔버스 이벤트
         this.canvas.addEventListener('click', (e) => this.handleCanvasClick(e));
-
-        // 캔버스 호버
         this.canvas.addEventListener('mousemove', (e) => this.handleCanvasHover(e));
         this.canvas.addEventListener('mouseleave', () => this.render());
 
-        // 버튼들
+        // 게임 컨트롤
         document.getElementById('btn-new-game').addEventListener('click', () => this.newGame());
         document.getElementById('btn-undo').addEventListener('click', () => this.handleUndo());
         document.getElementById('btn-pass').addEventListener('click', () => this.handlePass());
         document.getElementById('btn-resign').addEventListener('click', () => this.handleResign());
 
-        // 모드 버튼
-        document.getElementById('mode-local').addEventListener('click', () => this.setMode('local'));
-        document.getElementById('mode-ai').addEventListener('click', () => this.setMode('ai'));
-        document.getElementById('mode-online').addEventListener('click', () => this.setMode('online'));
-
-        // 보드 크기 변경
-        document.getElementById('board-size').addEventListener('change', (e) => {
-            this.game.reset(parseInt(e.target.value));
-            this.resizeCanvas();
-            this.updateUI();
-        });
-
-        // AI 설정
-        document.getElementById('ai-level').addEventListener('change', (e) => {
-            this.ai.setLevel(parseInt(e.target.value));
-        });
-
-        document.getElementById('ai-color').addEventListener('change', (e) => {
-            this.ai.setColor(e.target.value);
-            if (this.mode === 'ai' && this.ai.isMyTurn()) {
-                this.aiMove();
-            }
-        });
-
-        // SGF
-        document.getElementById('btn-save-sgf').addEventListener('click', () => this.saveSGF());
-        document.getElementById('btn-load-sgf').addEventListener('click', () => {
+        // 사이드 패널
+        document.getElementById('btn-boards').addEventListener('click', () => this.openBoardModal());
+        document.getElementById('btn-settings').addEventListener('click', () => this.toggleSettings());
+        document.getElementById('btn-save').addEventListener('click', () => this.saveSGF());
+        document.getElementById('btn-load').addEventListener('click', () => {
             document.getElementById('sgf-file-input').click();
         });
         document.getElementById('sgf-file-input').addEventListener('change', (e) => this.loadSGF(e));
 
-        // 설정 모달
-        document.getElementById('btn-settings').addEventListener('click', () => this.openSettings());
-        document.getElementById('close-settings').addEventListener('click', () => this.closeSettings());
+        // 설정
+        document.getElementById('board-size').addEventListener('change', (e) => {
+            this.game.reset(parseInt(e.target.value));
+            document.getElementById('board-size-display').textContent = `${e.target.value}×${e.target.value}`;
+            this.resizeCanvas();
+            this.updateCapturedStones();
+            this.updateUI();
+        });
 
-        // 게임 오버 모달
-        document.getElementById('btn-rematch').addEventListener('click', () => {
-            this.closeGameOver();
+        document.getElementById('game-mode').addEventListener('change', (e) => {
+            this.mode = e.target.value;
+            document.getElementById('game-mode-display').textContent = e.target.value === 'ai' ? 'AI' : '로컬';
+            document.getElementById('ai-settings').style.display = e.target.value === 'ai' ? 'block' : 'none';
             this.newGame();
         });
-        document.getElementById('btn-close-gameover').addEventListener('click', () => this.closeGameOver());
 
-        // 설정 변경
-        document.getElementById('board-theme').addEventListener('change', (e) => {
-            this.settings.boardTheme = e.target.value;
-            this.saveSettings();
-            this.render();
+        document.getElementById('ai-level').addEventListener('change', (e) => {
+            this.ai.setLevel(parseInt(e.target.value));
         });
 
         document.getElementById('sound-enabled').addEventListener('change', (e) => {
@@ -286,40 +245,55 @@ class BadukApp {
             this.saveSettings();
         });
 
-        document.getElementById('show-coordinates').addEventListener('change', (e) => {
-            this.settings.showCoordinates = e.target.checked;
-            this.saveSettings();
-            this.render();
+        // 모달
+        document.getElementById('close-board-modal').addEventListener('click', () => this.closeBoardModal());
+        document.getElementById('btn-rematch').addEventListener('click', () => {
+            this.closeGameOver();
+            this.newGame();
         });
+        document.getElementById('btn-close-gameover').addEventListener('click', () => this.closeGameOver());
 
-        document.getElementById('show-last-move').addEventListener('change', (e) => {
-            this.settings.showLastMove = e.target.checked;
-            this.saveSettings();
-            this.render();
-        });
+        // 항아리 클릭 이벤트
+        document.getElementById('jar-black').addEventListener('click', () => this.onJarClick('black'));
+        document.getElementById('jar-white').addEventListener('click', () => this.onJarClick('white'));
     }
 
-    // 캔버스 클릭 처리
+    // 항아리 클릭 시 상호작용
+    onJarClick(color) {
+        if (this.settings.soundEnabled) {
+            this.soundManager.playJarSound();
+        }
+
+        // 항아리 안의 돌들 흔들기 애니메이션
+        const containerId = color === 'black' ? 'captured-white' : 'captured-black';
+        const container = document.getElementById(containerId);
+        const stones = container.querySelectorAll('.captured-stone');
+
+        stones.forEach((stone, i) => {
+            setTimeout(() => {
+                stone.style.transform = 'translateY(-10px) rotate(10deg)';
+                setTimeout(() => {
+                    stone.style.transform = '';
+                }, 150);
+            }, i * 30);
+        });
+
+        this.showToast(`${color === 'black' ? '흑' : '백'}이 잡은 돌: ${color === 'black' ? this.game.captures.black : this.game.captures.white}개`);
+    }
+
     handleCanvasClick(e) {
         if (this.game.gameOver) return;
-
-        // 온라인 모드에서 내 턴이 아니면 무시
-        if (this.mode === 'online' && !this.online.isMyTurn()) return;
-
-        // AI 모드에서 AI 턴이면 무시
         if (this.mode === 'ai' && this.ai.isMyTurn()) return;
 
         const rect = this.canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
-
         const pos = this.canvasToBoard(x, y);
-        if (!pos) return;
 
+        if (!pos) return;
         this.makeMove(pos.x, pos.y);
     }
 
-    // 캔버스 호버 처리
     handleCanvasHover(e) {
         if (this.game.gameOver) return;
         if (this.mode === 'ai' && this.ai.isMyTurn()) return;
@@ -327,18 +301,15 @@ class BadukApp {
         const rect = this.canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
-
         const pos = this.canvasToBoard(x, y);
 
         this.render();
 
         if (pos && this.game.isValidMove(pos.x, pos.y)) {
-            // 미리보기 돌 그리기
             this.drawStonePreview(pos.x, pos.y);
         }
     }
 
-    // 캔버스 좌표를 보드 좌표로 변환
     canvasToBoard(canvasX, canvasY) {
         const x = Math.round((canvasX - this.padding) / this.cellSize);
         const y = Math.round((canvasY - this.padding) / this.cellSize);
@@ -346,11 +317,9 @@ class BadukApp {
         if (x < 0 || x >= this.game.size || y < 0 || y >= this.game.size) {
             return null;
         }
-
         return { x, y };
     }
 
-    // 보드 좌표를 캔버스 좌표로 변환
     boardToCanvas(x, y) {
         return {
             x: this.padding + x * this.cellSize,
@@ -358,43 +327,38 @@ class BadukApp {
         };
     }
 
-    // 착수
     makeMove(x, y) {
         const result = this.game.placeStone(x, y);
 
         if (result.success) {
             this.lastMove = { x, y };
-            this.playStoneSound();
 
-            // 따먹은 돌이 있으면 캡처 소리도 재생
+            if (this.settings.soundEnabled) {
+                this.soundManager.playStoneSound();
+            }
+
             if (result.captured && result.captured.length > 0) {
                 setTimeout(() => {
-                    this.playCaptureSound(result.captured.length);
+                    if (this.settings.soundEnabled) {
+                        this.soundManager.playCaptureSound(result.captured.length);
+                    }
+                    this.addCapturedStones(result.captured);
                 }, 100);
             }
 
             this.updateUI();
             this.render();
-            this.updateMoveList();
 
-            // 온라인 모드면 서버에 전송
-            if (this.mode === 'online') {
-                this.online.sendMove(x, y);
-            }
-
-            // AI 모드면 AI 턴 진행
             if (this.mode === 'ai' && !this.game.gameOver && this.ai.isMyTurn()) {
                 this.aiMove();
             }
 
-            // 게임 종료 체크
             if (this.game.gameOver) {
                 this.showGameOver();
             }
         }
     }
 
-    // AI 착수
     async aiMove() {
         if (this.game.gameOver) return;
 
@@ -409,7 +373,6 @@ class BadukApp {
         }
     }
 
-    // 패스 처리
     handlePass(isAI = false) {
         if (this.game.gameOver) return;
 
@@ -417,11 +380,7 @@ class BadukApp {
 
         if (result.success) {
             this.updateUI();
-            this.updateMoveList();
-
-            if (this.mode === 'online' && !isAI) {
-                this.online.sendPass();
-            }
+            this.showToast(`${this.game.currentPlayer === 'black' ? '백' : '흑'} 패스`);
 
             if (result.gameOver) {
                 this.showGameOver();
@@ -431,56 +390,43 @@ class BadukApp {
         }
     }
 
-    // 기권 처리
     handleResign() {
         if (this.game.gameOver) return;
 
         if (confirm('정말 기권하시겠습니까?')) {
             const result = this.game.resign();
-
-            if (this.mode === 'online') {
-                this.online.sendResign();
-            }
-
             this.showGameOver(result.winner + ' 승! (기권)');
         }
     }
 
-    // 무르기 처리
     handleUndo() {
         if (this.game.moveHistory.length === 0) return;
 
-        // AI 모드에서는 2수 무르기 (내 수 + AI 수)
-        const undoTwice = this.mode === 'ai';
+        const needsAd = this.game.undoCount >= this.game.maxUndo;
 
+        if (needsAd) {
+            this.showAdModal(() => this.performUndo());
+        } else {
+            this.performUndo();
+        }
+    }
+
+    performUndo() {
+        const undoTwice = this.mode === 'ai';
         const result = this.game.undo();
 
         if (result.success) {
-            if (result.needsAd) {
-                this.showAdModal(() => {
-                    this.lastMove = this.getLastMoveFromHistory();
-                    this.updateUI();
-                    this.render();
+            this.lastMove = this.getLastMoveFromHistory();
+            this.updateCapturedStones();
+            this.updateUI();
+            this.render();
 
-                    // AI 모드에서 한 번 더 무르기
-                    if (undoTwice && this.game.moveHistory.length > 0) {
-                        this.game.undo();
-                        this.lastMove = this.getLastMoveFromHistory();
-                        this.updateUI();
-                        this.render();
-                    }
-                });
-            } else {
+            if (undoTwice && this.game.moveHistory.length > 0) {
+                this.game.undo();
                 this.lastMove = this.getLastMoveFromHistory();
+                this.updateCapturedStones();
                 this.updateUI();
                 this.render();
-
-                if (undoTwice && this.game.moveHistory.length > 0) {
-                    this.game.undo();
-                    this.lastMove = this.getLastMoveFromHistory();
-                    this.updateUI();
-                    this.render();
-                }
             }
         }
     }
@@ -495,34 +441,79 @@ class BadukApp {
         return null;
     }
 
-    // 새 게임
     newGame() {
         const size = parseInt(document.getElementById('board-size').value);
         this.game.reset(size);
         this.lastMove = null;
         this.resizeCanvas();
+        this.clearCapturedStones();
         this.updateUI();
-        this.updateMoveList();
 
-        // AI 모드에서 AI가 흑이면 AI 먼저 착수
         if (this.mode === 'ai' && this.ai.color === 'black') {
             this.aiMove();
         }
     }
 
-    // 모드 설정
-    setMode(mode) {
-        this.mode = mode;
+    // 따낸 돌 시각화
+    addCapturedStones(captured) {
+        const capturer = this.game.currentPlayer === 'black' ? 'white' : 'black';
+        const containerId = capturer === 'black' ? 'captured-white' : 'captured-black';
+        const container = document.getElementById(containerId);
 
-        // 버튼 업데이트
-        document.querySelectorAll('.btn-mode').forEach(btn => btn.classList.remove('active'));
-        document.getElementById(`mode-${mode}`).classList.add('active');
+        captured.forEach((stone, i) => {
+            setTimeout(() => {
+                const stoneEl = document.createElement('div');
+                stoneEl.className = `captured-stone ${stone.player || (capturer === 'black' ? 'white' : 'black')}`;
+                stoneEl.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.onCapturedStoneClick(stoneEl);
+                });
+                container.appendChild(stoneEl);
+            }, i * 50);
+        });
+    }
 
-        // AI 설정 표시/숨김
-        document.getElementById('ai-settings').style.display = mode === 'ai' ? 'block' : 'none';
+    onCapturedStoneClick(stoneEl) {
+        if (this.settings.soundEnabled) {
+            this.soundManager.playCaptureSound(1);
+        }
+        stoneEl.style.transform = 'scale(1.5) translateY(-15px)';
+        setTimeout(() => {
+            stoneEl.style.transform = '';
+        }, 200);
+    }
 
-        // 새 게임 시작
-        this.newGame();
+    updateCapturedStones() {
+        this.clearCapturedStones();
+
+        // 흑이 잡은 돌 (백돌)
+        const capturedWhite = document.getElementById('captured-white');
+        for (let i = 0; i < this.game.captures.black; i++) {
+            const stoneEl = document.createElement('div');
+            stoneEl.className = 'captured-stone white';
+            stoneEl.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.onCapturedStoneClick(stoneEl);
+            });
+            capturedWhite.appendChild(stoneEl);
+        }
+
+        // 백이 잡은 돌 (흑돌)
+        const capturedBlack = document.getElementById('captured-black');
+        for (let i = 0; i < this.game.captures.white; i++) {
+            const stoneEl = document.createElement('div');
+            stoneEl.className = 'captured-stone black';
+            stoneEl.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.onCapturedStoneClick(stoneEl);
+            });
+            capturedBlack.appendChild(stoneEl);
+        }
+    }
+
+    clearCapturedStones() {
+        document.getElementById('captured-white').innerHTML = '';
+        document.getElementById('captured-black').innerHTML = '';
     }
 
     // 렌더링
@@ -531,60 +522,59 @@ class BadukApp {
         this.drawBoard();
         this.drawStones();
 
-        if (this.settings.showLastMove && this.lastMove) {
+        if (this.lastMove) {
             this.drawLastMoveMarker(this.lastMove.x, this.lastMove.y);
         }
     }
 
-    // 보드 그리기
     drawBoard() {
         const ctx = this.ctx;
         const size = this.game.size;
+        const skin = BOARD_SKINS.find(s => s.id === this.currentSkin) || BOARD_SKINS[0];
 
         // 배경
-        const themes = {
-            classic: '#dcb35c',
-            dark: '#2d2d2d',
-            wood: '#c4a35a'
-        };
-        ctx.fillStyle = themes[this.settings.boardTheme] || themes.classic;
+        ctx.fillStyle = skin.boardColor;
         ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // 선 색상
-        const lineColor = this.settings.boardTheme === 'dark' ? '#555' : '#2d2d2d';
-        ctx.strokeStyle = lineColor;
+        // 나무 질감 효과
+        ctx.globalAlpha = 0.1;
+        for (let i = 0; i < 50; i++) {
+            ctx.fillStyle = Math.random() > 0.5 ? '#000' : '#fff';
+            ctx.fillRect(
+                Math.random() * this.canvas.width,
+                Math.random() * this.canvas.height,
+                Math.random() * 3,
+                Math.random() * 100
+            );
+        }
+        ctx.globalAlpha = 1;
+
+        // 격자
+        ctx.strokeStyle = skin.lineColor;
         ctx.lineWidth = 1;
 
-        // 격자 그리기
         for (let i = 0; i < size; i++) {
             const pos = this.padding + i * this.cellSize;
 
-            // 세로선
             ctx.beginPath();
             ctx.moveTo(pos, this.padding);
             ctx.lineTo(pos, this.padding + (size - 1) * this.cellSize);
             ctx.stroke();
 
-            // 가로선
             ctx.beginPath();
             ctx.moveTo(this.padding, pos);
             ctx.lineTo(this.padding + (size - 1) * this.cellSize, pos);
             ctx.stroke();
         }
 
-        // 화점
         this.drawStarPoints();
-
-        // 좌표
-        if (this.settings.showCoordinates) {
-            this.drawCoordinates();
-        }
+        this.drawCoordinates();
     }
 
-    // 화점 그리기
     drawStarPoints() {
         const ctx = this.ctx;
         const size = this.game.size;
+        const skin = BOARD_SKINS.find(s => s.id === this.currentSkin) || BOARD_SKINS[0];
 
         let points = [];
         if (size === 19) {
@@ -593,13 +583,9 @@ class BadukApp {
             points = [[3,3], [3,9], [6,6], [9,3], [9,9]];
         } else if (size === 9) {
             points = [[2,2], [2,6], [4,4], [6,2], [6,6]];
-        } else {
-            // 다른 크기는 중앙만
-            const center = Math.floor(size / 2);
-            points = [[center, center]];
         }
 
-        ctx.fillStyle = this.settings.boardTheme === 'dark' ? '#888' : '#2d2d2d';
+        ctx.fillStyle = skin.lineColor;
 
         for (const [x, y] of points) {
             const pos = this.boardToCanvas(x, y);
@@ -609,34 +595,27 @@ class BadukApp {
         }
     }
 
-    // 좌표 그리기
     drawCoordinates() {
         const ctx = this.ctx;
         const size = this.game.size;
+        const skin = BOARD_SKINS.find(s => s.id === this.currentSkin) || BOARD_SKINS[0];
 
-        ctx.fillStyle = this.settings.boardTheme === 'dark' ? '#888' : '#666';
+        ctx.fillStyle = skin.lineColor;
         ctx.font = '10px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
-        const letters = 'ABCDEFGHJKLMNOPQRST'; // I 제외
+        const letters = 'ABCDEFGHJKLMNOPQRST';
 
         for (let i = 0; i < size; i++) {
             const pos = this.padding + i * this.cellSize;
-
-            // 위쪽 알파벳
-            ctx.fillText(letters[i], pos, 10);
-            // 아래쪽 알파벳
-            ctx.fillText(letters[i], pos, this.canvas.height - 10);
-
-            // 왼쪽 숫자
-            ctx.fillText(String(size - i), 10, pos);
-            // 오른쪽 숫자
-            ctx.fillText(String(size - i), this.canvas.width - 10, pos);
+            ctx.fillText(letters[i], pos, 8);
+            ctx.fillText(letters[i], pos, this.canvas.height - 8);
+            ctx.fillText(String(size - i), 8, pos);
+            ctx.fillText(String(size - i), this.canvas.width - 8, pos);
         }
     }
 
-    // 돌 그리기
     drawStones() {
         for (let x = 0; x < this.game.size; x++) {
             for (let y = 0; y < this.game.size; y++) {
@@ -648,7 +627,6 @@ class BadukApp {
         }
     }
 
-    // 단일 돌 그리기
     drawStone(x, y, color) {
         const ctx = this.ctx;
         const pos = this.boardToCanvas(x, y);
@@ -683,10 +661,8 @@ class BadukApp {
         ctx.fill();
     }
 
-    // 돌 미리보기
     drawStonePreview(x, y) {
         const ctx = this.ctx;
-        const pos = this.boardToCanvas(x, y);
         const color = this.game.currentPlayer;
 
         ctx.globalAlpha = 0.5;
@@ -694,7 +670,6 @@ class BadukApp {
         ctx.globalAlpha = 1;
     }
 
-    // 마지막 수 표시
     drawLastMoveMarker(x, y) {
         const ctx = this.ctx;
         const pos = this.boardToCanvas(x, y);
@@ -703,108 +678,82 @@ class BadukApp {
         ctx.strokeStyle = stone === 'black' ? '#fff' : '#000';
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.arc(pos.x, pos.y, this.stoneRadius * 0.5, 0, Math.PI * 2);
+        ctx.arc(pos.x, pos.y, this.stoneRadius * 0.4, 0, Math.PI * 2);
         ctx.stroke();
-    }
-
-    // 돌 놓는 소리 재생
-    playStoneSound() {
-        if (!this.settings.soundEnabled) return;
-        this.soundManager.playStoneSound();
-    }
-
-    // 돌 따먹는 소리 재생
-    playCaptureSound(count) {
-        if (!this.settings.soundEnabled) return;
-        this.soundManager.playCaptureSound(count);
     }
 
     // UI 업데이트
     updateUI() {
-        // 따낸 돌
         document.getElementById('black-captures').textContent = this.game.captures.black;
         document.getElementById('white-captures').textContent = this.game.captures.white;
-
-        // 수순
         document.getElementById('move-count').textContent = this.game.moveHistory.length;
 
-        // 무르기 횟수
-        document.getElementById('undo-count').textContent = this.game.undoCount;
+        const playerBlack = document.getElementById('player-black');
+        const playerWhite = document.getElementById('player-white');
+        const blackStatus = document.getElementById('black-status');
+        const whiteStatus = document.getElementById('white-status');
 
-        // 턴 표시
-        const blackTurn = document.getElementById('black-turn');
-        const whiteTurn = document.getElementById('white-turn');
-
-        blackTurn.classList.toggle('active', this.game.currentPlayer === 'black');
-        whiteTurn.classList.toggle('active', this.game.currentPlayer === 'white');
+        if (this.game.currentPlayer === 'black') {
+            playerBlack.classList.add('active');
+            playerWhite.classList.remove('active');
+            blackStatus.textContent = '차례입니다';
+            whiteStatus.textContent = '대기 중';
+        } else {
+            playerBlack.classList.remove('active');
+            playerWhite.classList.add('active');
+            blackStatus.textContent = '대기 중';
+            whiteStatus.textContent = '차례입니다';
+        }
     }
 
-    // 기보 목록 업데이트
-    updateMoveList() {
-        const list = document.getElementById('move-list');
-        list.innerHTML = '';
+    // 보드 스킨
+    renderBoardSkins() {
+        const grid = document.getElementById('board-grid');
+        grid.innerHTML = '';
 
-        const letters = 'ABCDEFGHJKLMNOPQRST';
+        BOARD_SKINS.forEach(skin => {
+            const card = document.createElement('div');
+            card.className = `board-card ${skin.id === this.currentSkin ? 'selected' : ''} ${!skin.unlocked ? 'locked' : ''}`;
+            card.innerHTML = `
+                <div class="board-preview preview-${skin.id}"></div>
+                <div class="board-name">${skin.name}</div>
+                <div class="board-price ${skin.price === 0 ? 'free' : ''}">${skin.price === 0 ? '무료' : `₩${skin.price.toLocaleString()}`}</div>
+                ${!skin.unlocked ? '<div class="lock-icon">🔒</div>' : ''}
+            `;
 
-        this.game.moveHistory.forEach((move, index) => {
-            const div = document.createElement('div');
-            div.className = `move-item ${move.player}`;
-
-            if (move.pass) {
-                div.textContent = `${index + 1}. ${move.player === 'black' ? '흑' : '백'} 패스`;
-            } else {
-                const coord = `${letters[move.x]}${this.game.size - move.y}`;
-                div.textContent = `${index + 1}. ${move.player === 'black' ? '흑' : '백'} ${coord}`;
-            }
-
-            list.appendChild(div);
+            card.addEventListener('click', () => this.selectBoardSkin(skin));
+            grid.appendChild(card);
         });
-
-        list.scrollTop = list.scrollHeight;
     }
 
-    // SGF 저장
-    saveSGF() {
-        const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-        this.sgf.downloadSGF(this.game, `baduk_${date}.sgf`);
-    }
-
-    // SGF 불러오기
-    async loadSGF(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        try {
-            const sgfData = await this.sgf.loadSGFFile(file);
-            this.sgf.applyToGame(this.game, sgfData);
-
-            // 보드 크기 선택 업데이트
-            document.getElementById('board-size').value = sgfData.size;
-
-            this.lastMove = this.getLastMoveFromHistory();
-            this.resizeCanvas();
-            this.updateUI();
-            this.updateMoveList();
-
-            alert('기보를 불러왔습니다.');
-        } catch (e) {
-            alert('기보 파일을 읽을 수 없습니다.');
-            console.error(e);
+    selectBoardSkin(skin) {
+        if (!skin.unlocked) {
+            this.showToast(`"${skin.name}" 보드는 ₩${skin.price.toLocaleString()}에 구매할 수 있습니다.`);
+            return;
         }
 
-        event.target.value = '';
+        this.currentSkin = skin.id;
+        document.getElementById('board-frame').className = `board-frame theme-${skin.id}`;
+        this.renderBoardSkins();
+        this.render();
+        this.saveSettings();
+        this.closeBoardModal();
+        this.showToast(`"${skin.name}" 보드 적용됨`);
     }
 
-    // 설정 모달
-    openSettings() {
-        document.getElementById('settings-modal').classList.add('show');
+    // 모달
+    openBoardModal() {
+        document.getElementById('board-modal').classList.add('show');
     }
 
-    closeSettings() {
-        document.getElementById('settings-modal').classList.remove('show');
+    closeBoardModal() {
+        document.getElementById('board-modal').classList.remove('show');
     }
 
-    // 게임 오버 모달
+    toggleSettings() {
+        document.getElementById('settings-panel').classList.toggle('show');
+    }
+
     showGameOver(message = null) {
         const modal = document.getElementById('gameover-modal');
         const msgEl = document.getElementById('gameover-message');
@@ -828,7 +777,6 @@ class BadukApp {
         document.getElementById('gameover-modal').classList.remove('show');
     }
 
-    // 광고 모달
     showAdModal(callback) {
         const modal = document.getElementById('ad-modal');
         const countdown = document.getElementById('ad-countdown');
@@ -849,23 +797,67 @@ class BadukApp {
         }, 1000);
     }
 
-    // 설정 저장
-    saveSettings() {
-        localStorage.setItem('baduk_settings', JSON.stringify(this.settings));
+    showToast(message) {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.classList.add('show');
+
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 2000);
     }
 
-    // 설정 불러오기
+    // SGF
+    saveSGF() {
+        const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+        this.sgf.downloadSGF(this.game, `baduk_${date}.sgf`);
+        this.showToast('기보 저장 완료');
+    }
+
+    async loadSGF(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        try {
+            const sgfData = await this.sgf.loadSGFFile(file);
+            this.sgf.applyToGame(this.game, sgfData);
+
+            document.getElementById('board-size').value = sgfData.size;
+            document.getElementById('board-size-display').textContent = `${sgfData.size}×${sgfData.size}`;
+
+            this.lastMove = this.getLastMoveFromHistory();
+            this.resizeCanvas();
+            this.updateCapturedStones();
+            this.updateUI();
+
+            this.showToast('기보 불러오기 완료');
+        } catch (e) {
+            this.showToast('기보 파일을 읽을 수 없습니다');
+            console.error(e);
+        }
+
+        event.target.value = '';
+    }
+
+    // 설정 저장/불러오기
+    saveSettings() {
+        const data = {
+            soundEnabled: this.settings.soundEnabled,
+            currentSkin: this.currentSkin
+        };
+        localStorage.setItem('baduk_settings', JSON.stringify(data));
+    }
+
     loadSettings() {
         const saved = localStorage.getItem('baduk_settings');
         if (saved) {
-            this.settings = { ...this.settings, ...JSON.parse(saved) };
-        }
+            const data = JSON.parse(saved);
+            this.settings.soundEnabled = data.soundEnabled ?? true;
+            this.currentSkin = data.currentSkin || 'classic';
 
-        // UI에 반영
-        document.getElementById('board-theme').value = this.settings.boardTheme;
-        document.getElementById('sound-enabled').checked = this.settings.soundEnabled;
-        document.getElementById('show-coordinates').checked = this.settings.showCoordinates;
-        document.getElementById('show-last-move').checked = this.settings.showLastMove;
+            document.getElementById('sound-enabled').checked = this.settings.soundEnabled;
+            document.getElementById('board-frame').className = `board-frame theme-${this.currentSkin}`;
+        }
     }
 }
 

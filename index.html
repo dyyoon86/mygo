@@ -3,197 +3,212 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>바둑 - Baduk Online</title>
+    <title>바둑 - Premium Board Collection</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
-        <!-- Header -->
-        <header class="header">
-            <h1>바둑</h1>
-            <div class="header-actions">
-                <button id="btn-settings" class="btn btn-icon" title="설정">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="3"></circle>
-                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                    </svg>
-                </button>
+    <!-- 게임 정보 바 -->
+    <div class="game-info-bar">
+        <div class="info-item">
+            <div class="info-label">수순</div>
+            <div class="info-value" id="move-count">0</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">바둑판</div>
+            <div class="info-value" id="board-size-display">19×19</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">모드</div>
+            <div class="info-value" id="game-mode-display">로컬</div>
+        </div>
+    </div>
+
+    <!-- 메인 게임 컨테이너 -->
+    <div class="game-container">
+        <div class="board-frame theme-classic" id="board-frame">
+            <!-- 코너 장식 -->
+            <div class="corner-decoration corner-tl"></div>
+            <div class="corner-decoration corner-tr"></div>
+            <div class="corner-decoration corner-bl"></div>
+            <div class="corner-decoration corner-br"></div>
+
+            <!-- 흑 플레이어 (위) -->
+            <div class="player-area black active" id="player-black">
+                <div class="player-avatar stone-black"></div>
+                <div class="player-info">
+                    <div class="player-name">흑</div>
+                    <div class="player-status" id="black-status">차례입니다</div>
+                </div>
             </div>
-        </header>
 
-        <!-- Main Game Area -->
-        <main class="main">
-            <!-- Game Info Panel -->
-            <aside class="panel panel-left">
-                <div class="player-card player-black">
-                    <div class="stone stone-black"></div>
-                    <div class="player-info">
-                        <span class="player-name">흑</span>
-                        <span class="player-captures">따낸 돌: <strong id="black-captures">0</strong></span>
-                    </div>
-                    <div class="turn-indicator" id="black-turn"></div>
+            <!-- 백 플레이어 (아래) -->
+            <div class="player-area white" id="player-white">
+                <div class="player-avatar stone-white"></div>
+                <div class="player-info">
+                    <div class="player-name">백</div>
+                    <div class="player-status" id="white-status">대기 중</div>
                 </div>
+            </div>
 
-                <div class="player-card player-white">
-                    <div class="stone stone-white"></div>
-                    <div class="player-info">
-                        <span class="player-name">백</span>
-                        <span class="player-captures">따낸 돌: <strong id="white-captures">0</strong></span>
-                    </div>
-                    <div class="turn-indicator" id="white-turn"></div>
+            <!-- 흑이 잡은 돌 항아리 (왼쪽 - 백돌) -->
+            <div class="capture-jar left" id="jar-black" title="클릭하여 상호작용">
+                <div class="jar-body">
+                    <div class="jar-rim"></div>
+                    <div class="jar-shine"></div>
+                    <div class="captured-stones-container" id="captured-white"></div>
                 </div>
+                <div class="capture-count" id="black-captures">0</div>
+            </div>
 
-                <div class="game-info">
-                    <p>수순: <strong id="move-count">0</strong></p>
-                    <p>무르기: <strong id="undo-count">0</strong>/2</p>
+            <!-- 백이 잡은 돌 항아리 (오른쪽 - 흑돌) -->
+            <div class="capture-jar right" id="jar-white" title="클릭하여 상호작용">
+                <div class="jar-body">
+                    <div class="jar-rim"></div>
+                    <div class="jar-shine"></div>
+                    <div class="captured-stones-container" id="captured-black"></div>
                 </div>
+                <div class="capture-count" id="white-captures">0</div>
+            </div>
 
-                <div class="game-actions">
-                    <button id="btn-undo" class="btn btn-secondary">무르기</button>
-                    <button id="btn-pass" class="btn btn-secondary">패스</button>
-                    <button id="btn-resign" class="btn btn-danger">기권</button>
-                </div>
-            </aside>
-
-            <!-- Board Container -->
-            <div class="board-container">
+            <!-- 바둑판 캔버스 -->
+            <div class="board-canvas-wrapper">
                 <canvas id="board-canvas"></canvas>
-                <div id="board-overlay" class="board-overlay"></div>
-            </div>
-
-            <!-- Right Panel -->
-            <aside class="panel panel-right">
-                <div class="panel-section">
-                    <h3>게임 모드</h3>
-                    <div class="mode-buttons">
-                        <button id="mode-local" class="btn btn-mode active">로컬 대국</button>
-                        <button id="mode-ai" class="btn btn-mode">AI 대국</button>
-                        <button id="mode-online" class="btn btn-mode" disabled>온라인</button>
-                    </div>
-                </div>
-
-                <div class="panel-section">
-                    <h3>바둑판 크기</h3>
-                    <select id="board-size" class="select">
-                        <option value="7">7×7</option>
-                        <option value="9">9×9</option>
-                        <option value="11">11×11</option>
-                        <option value="13">13×13</option>
-                        <option value="15">15×15</option>
-                        <option value="17">17×17</option>
-                        <option value="19" selected>19×19</option>
-                    </select>
-                </div>
-
-                <div class="panel-section" id="ai-settings" style="display: none;">
-                    <h3>AI 설정</h3>
-                    <label class="label">난이도</label>
-                    <select id="ai-level" class="select">
-                        <option value="1">초급</option>
-                        <option value="2">중급</option>
-                        <option value="3">고급</option>
-                    </select>
-                    <label class="label">AI 색상</label>
-                    <select id="ai-color" class="select">
-                        <option value="white">백 (AI)</option>
-                        <option value="black">흑 (AI)</option>
-                    </select>
-                </div>
-
-                <div class="panel-section">
-                    <h3>기보</h3>
-                    <div class="sgf-actions">
-                        <button id="btn-save-sgf" class="btn btn-sm">저장 (SGF)</button>
-                        <button id="btn-load-sgf" class="btn btn-sm">불러오기</button>
-                        <input type="file" id="sgf-file-input" accept=".sgf" style="display: none;">
-                    </div>
-                </div>
-
-                <div class="panel-section">
-                    <button id="btn-new-game" class="btn btn-primary btn-full">새 게임</button>
-                </div>
-
-                <!-- Move History -->
-                <div class="panel-section move-history">
-                    <h3>기보 목록</h3>
-                    <div id="move-list" class="move-list"></div>
-                </div>
-            </aside>
-        </main>
-
-        <!-- Settings Modal -->
-        <div id="settings-modal" class="modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2>설정</h2>
-                    <button class="btn-close" id="close-settings">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <div class="setting-item">
-                        <label>보드 테마</label>
-                        <select id="board-theme" class="select">
-                            <option value="classic">클래식</option>
-                            <option value="dark">다크</option>
-                            <option value="wood">원목</option>
-                        </select>
-                    </div>
-                    <div class="setting-item">
-                        <label>소리</label>
-                        <input type="checkbox" id="sound-enabled" checked>
-                    </div>
-                    <div class="setting-item">
-                        <label>좌표 표시</label>
-                        <input type="checkbox" id="show-coordinates" checked>
-                    </div>
-                    <div class="setting-item">
-                        <label>마지막 수 표시</label>
-                        <input type="checkbox" id="show-last-move" checked>
-                    </div>
-                </div>
             </div>
         </div>
+    </div>
 
-        <!-- Game Over Modal -->
-        <div id="gameover-modal" class="modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2>게임 종료</h2>
-                </div>
-                <div class="modal-body">
-                    <p id="gameover-message"></p>
-                    <div class="score-display">
-                        <div class="score-item">
-                            <span class="stone stone-black"></span>
-                            <span>흑: <strong id="black-score">0</strong></span>
-                        </div>
-                        <div class="score-item">
-                            <span class="stone stone-white"></span>
-                            <span>백: <strong id="white-score">0</strong></span>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button id="btn-rematch" class="btn btn-primary">다시 하기</button>
-                    <button id="btn-close-gameover" class="btn btn-secondary">닫기</button>
-                </div>
+    <!-- 사이드 패널 (오른쪽) -->
+    <div class="side-panel">
+        <button class="panel-btn" id="btn-boards" title="보드 스킨">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <line x1="3" y1="9" x2="21" y2="9"/>
+                <line x1="3" y1="15" x2="21" y2="15"/>
+                <line x1="9" y1="3" x2="9" y2="21"/>
+                <line x1="15" y1="3" x2="15" y2="21"/>
+            </svg>
+        </button>
+        <button class="panel-btn" id="btn-settings" title="설정">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+        </button>
+        <button class="panel-btn" id="btn-save" title="기보 저장">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                <polyline points="17 21 17 13 7 13 7 21"/>
+                <polyline points="7 3 7 8 15 8"/>
+            </svg>
+        </button>
+        <button class="panel-btn" id="btn-load" title="기보 불러오기">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+        </button>
+        <input type="file" id="sgf-file-input" accept=".sgf" style="display: none;">
+    </div>
+
+    <!-- 설정 패널 (왼쪽) -->
+    <div class="settings-panel" id="settings-panel">
+        <div class="setting-group">
+            <label class="setting-label">바둑판 크기</label>
+            <select id="board-size" class="setting-select">
+                <option value="9">9×9</option>
+                <option value="13">13×13</option>
+                <option value="19" selected>19×19</option>
+            </select>
+        </div>
+        <div class="setting-group">
+            <label class="setting-label">게임 모드</label>
+            <select id="game-mode" class="setting-select">
+                <option value="local">로컬 대국</option>
+                <option value="ai">AI 대국</option>
+            </select>
+        </div>
+        <div class="setting-group" id="ai-settings" style="display: none;">
+            <label class="setting-label">AI 난이도</label>
+            <select id="ai-level" class="setting-select">
+                <option value="1">초급</option>
+                <option value="2" selected>중급</option>
+                <option value="3">고급</option>
+            </select>
+        </div>
+        <div class="setting-group">
+            <label class="setting-label">
+                <input type="checkbox" id="sound-enabled" checked> 소리
+            </label>
+        </div>
+    </div>
+
+    <!-- 게임 컨트롤 버튼 -->
+    <div class="game-controls">
+        <button class="control-btn primary" id="btn-new-game">새 게임</button>
+        <button class="control-btn" id="btn-undo">무르기</button>
+        <button class="control-btn" id="btn-pass">패스</button>
+        <button class="control-btn danger" id="btn-resign">기권</button>
+    </div>
+
+    <!-- 보드 선택 모달 -->
+    <div class="modal-overlay" id="board-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">보드 스킨 선택</h2>
+                <button class="modal-close" id="close-board-modal">&times;</button>
+            </div>
+            <div class="board-grid" id="board-grid">
+                <!-- JavaScript에서 동적 생성 -->
             </div>
         </div>
+    </div>
 
-        <!-- Ad Modal (for undo > 2) -->
-        <div id="ad-modal" class="modal">
-            <div class="modal-content modal-ad">
-                <div class="modal-header">
-                    <h2>광고</h2>
-                </div>
-                <div class="modal-body">
-                    <div class="ad-placeholder">
-                        <p>광고 영역</p>
-                        <p class="ad-timer">무르기까지 <span id="ad-countdown">5</span>초</p>
+    <!-- 게임 종료 모달 -->
+    <div class="modal-overlay" id="gameover-modal">
+        <div class="modal-content" style="text-align: center; max-width: 400px;">
+            <div class="modal-header" style="justify-content: center;">
+                <h2 class="modal-title">게임 종료</h2>
+            </div>
+            <div style="padding: 20px;">
+                <p id="gameover-message" style="font-size: 24px; margin-bottom: 20px;"></p>
+                <div style="display: flex; justify-content: center; gap: 40px; margin-bottom: 30px;">
+                    <div>
+                        <div class="player-avatar stone-black" style="margin: 0 auto 10px;"></div>
+                        <div style="color: #888;">흑</div>
+                        <div style="font-size: 28px; font-weight: bold; color: #ffd700;" id="black-score">0</div>
                     </div>
+                    <div>
+                        <div class="player-avatar stone-white" style="margin: 0 auto 10px;"></div>
+                        <div style="color: #888;">백</div>
+                        <div style="font-size: 28px; font-weight: bold; color: #ffd700;" id="white-score">0</div>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 15px; justify-content: center;">
+                    <button class="control-btn primary" id="btn-rematch">다시 하기</button>
+                    <button class="control-btn" id="btn-close-gameover">닫기</button>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- 광고 모달 -->
+    <div class="modal-overlay" id="ad-modal">
+        <div class="modal-content" style="text-align: center; max-width: 400px;">
+            <div class="modal-header" style="justify-content: center;">
+                <h2 class="modal-title">광고</h2>
+            </div>
+            <div style="padding: 40px;">
+                <div style="background: rgba(255,255,255,0.1); padding: 60px 40px; border-radius: 10px; margin-bottom: 20px;">
+                    <p style="color: #888;">광고 영역</p>
+                </div>
+                <p style="color: #ffd700; font-size: 18px;">무르기까지 <span id="ad-countdown">5</span>초</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 토스트 알림 -->
+    <div class="toast" id="toast"></div>
 
     <script src="js/game.js"></script>
     <script src="js/ai.js"></script>
