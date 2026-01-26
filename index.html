@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>바둑 - Baduk Online</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>바둑</h1>
+            <div class="header-actions">
+                <button id="btn-settings" class="btn btn-icon" title="설정">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Game Area -->
+        <main class="main">
+            <!-- Game Info Panel -->
+            <aside class="panel panel-left">
+                <div class="player-card player-black">
+                    <div class="stone stone-black"></div>
+                    <div class="player-info">
+                        <span class="player-name">흑</span>
+                        <span class="player-captures">따낸 돌: <strong id="black-captures">0</strong></span>
+                    </div>
+                    <div class="turn-indicator" id="black-turn"></div>
+                </div>
+
+                <div class="player-card player-white">
+                    <div class="stone stone-white"></div>
+                    <div class="player-info">
+                        <span class="player-name">백</span>
+                        <span class="player-captures">따낸 돌: <strong id="white-captures">0</strong></span>
+                    </div>
+                    <div class="turn-indicator" id="white-turn"></div>
+                </div>
+
+                <div class="game-info">
+                    <p>수순: <strong id="move-count">0</strong></p>
+                    <p>무르기: <strong id="undo-count">0</strong>/2</p>
+                </div>
+
+                <div class="game-actions">
+                    <button id="btn-undo" class="btn btn-secondary">무르기</button>
+                    <button id="btn-pass" class="btn btn-secondary">패스</button>
+                    <button id="btn-resign" class="btn btn-danger">기권</button>
+                </div>
+            </aside>
+
+            <!-- Board Container -->
+            <div class="board-container">
+                <canvas id="board-canvas"></canvas>
+                <div id="board-overlay" class="board-overlay"></div>
+            </div>
+
+            <!-- Right Panel -->
+            <aside class="panel panel-right">
+                <div class="panel-section">
+                    <h3>게임 모드</h3>
+                    <div class="mode-buttons">
+                        <button id="mode-local" class="btn btn-mode active">로컬 대국</button>
+                        <button id="mode-ai" class="btn btn-mode">AI 대국</button>
+                        <button id="mode-online" class="btn btn-mode" disabled>온라인</button>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h3>바둑판 크기</h3>
+                    <select id="board-size" class="select">
+                        <option value="7">7×7</option>
+                        <option value="9">9×9</option>
+                        <option value="11">11×11</option>
+                        <option value="13">13×13</option>
+                        <option value="15">15×15</option>
+                        <option value="17">17×17</option>
+                        <option value="19" selected>19×19</option>
+                    </select>
+                </div>
+
+                <div class="panel-section" id="ai-settings" style="display: none;">
+                    <h3>AI 설정</h3>
+                    <label class="label">난이도</label>
+                    <select id="ai-level" class="select">
+                        <option value="1">초급</option>
+                        <option value="2">중급</option>
+                        <option value="3">고급</option>
+                    </select>
+                    <label class="label">AI 색상</label>
+                    <select id="ai-color" class="select">
+                        <option value="white">백 (AI)</option>
+                        <option value="black">흑 (AI)</option>
+                    </select>
+                </div>
+
+                <div class="panel-section">
+                    <h3>기보</h3>
+                    <div class="sgf-actions">
+                        <button id="btn-save-sgf" class="btn btn-sm">저장 (SGF)</button>
+                        <button id="btn-load-sgf" class="btn btn-sm">불러오기</button>
+                        <input type="file" id="sgf-file-input" accept=".sgf" style="display: none;">
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <button id="btn-new-game" class="btn btn-primary btn-full">새 게임</button>
+                </div>
+
+                <!-- Move History -->
+                <div class="panel-section move-history">
+                    <h3>기보 목록</h3>
+                    <div id="move-list" class="move-list"></div>
+                </div>
+            </aside>
+        </main>
+
+        <!-- Settings Modal -->
+        <div id="settings-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>설정</h2>
+                    <button class="btn-close" id="close-settings">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="setting-item">
+                        <label>보드 테마</label>
+                        <select id="board-theme" class="select">
+                            <option value="classic">클래식</option>
+                            <option value="dark">다크</option>
+                            <option value="wood">원목</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label>소리</label>
+                        <input type="checkbox" id="sound-enabled" checked>
+                    </div>
+                    <div class="setting-item">
+                        <label>좌표 표시</label>
+                        <input type="checkbox" id="show-coordinates" checked>
+                    </div>
+                    <div class="setting-item">
+                        <label>마지막 수 표시</label>
+                        <input type="checkbox" id="show-last-move" checked>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Over Modal -->
+        <div id="gameover-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>게임 종료</h2>
+                </div>
+                <div class="modal-body">
+                    <p id="gameover-message"></p>
+                    <div class="score-display">
+                        <div class="score-item">
+                            <span class="stone stone-black"></span>
+                            <span>흑: <strong id="black-score">0</strong></span>
+                        </div>
+                        <div class="score-item">
+                            <span class="stone stone-white"></span>
+                            <span>백: <strong id="white-score">0</strong></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="btn-rematch" class="btn btn-primary">다시 하기</button>
+                    <button id="btn-close-gameover" class="btn btn-secondary">닫기</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ad Modal (for undo > 2) -->
+        <div id="ad-modal" class="modal">
+            <div class="modal-content modal-ad">
+                <div class="modal-header">
+                    <h2>광고</h2>
+                </div>
+                <div class="modal-body">
+                    <div class="ad-placeholder">
+                        <p>광고 영역</p>
+                        <p class="ad-timer">무르기까지 <span id="ad-countdown">5</span>초</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Audio -->
+    <audio id="stone-sound" preload="auto">
+        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbsGsreli81teleT6LzuDOqH1FY5q+17OFVUNxoL/Wq3pOR3SVuNKuglJHepKz0LCDVUh7jq/NsIdYSnqKqcixjF1OeYajw7KRYFF5gp2+s5ZlU3l9l7mzm2tXeHmQs7GeeFhucpewqJhxXmp1j6ymlXhhaXOLp6SYf2Voc4iipJyGaGhxhJ6hnopreHCAnZ2di253cH2anJyPdHZ0eZeZmZGHeHZ3lJaWkouAeHWRkpKQj4N8dY6PjpCRh4B3coyMjJCTioR5cYmJiZGVjYh8coeGhpKYkIyAdoSCgpOakY+Fd4F+fpSdlJGJen18e5Wgl5SOf3h5eZajnJeTg3R2d5mqoZuYiHF0dJyxqaGdjnBxcqC4sKiikW9vcKW/uLKnlW5ubKnFv7qspG5saaXLxr+zqGxqZaHQzcO6rmtoYJrV0sjBsmhlW5La1s3IuGZiU4re2dLNvWVfTIHh3NfSw2JbRXrk4NzWyGBXPnHn5ODa0F5TOGjq6OTe1ltPMl/t7ejj2llMKlXw8+zo31dIIkvz+PDu5FVEGSF9+/f07+VPPhUXevz69/LlSjoQE3n8+/r18kU2DRB4/fz7+PVCMgsOd/79/Pn4QC8JDXX+/v38+j4sBwtz/v7+/fs8KgUKcf7//v78OygECHD+//7//TonAwZu/v///v46JgIFbf7///7+OSUBBGz+//7+/jkkAQNr/f/+/v85IwADav3//v7/OSMAAmn9//7//zgiAAFo/f/+//84IgABZ/3//v//OCEAAGb9//7//zghAABl/P/+//84IQAAZP3//v//NyAAAGT8//7//zcgAABj/f/+//83IAAAY/z//v//NyAAAGL8//7//zcfAABh/P/+//82HwAAYfz//v//Nh8AAGD8//7//zYfAABg/P/9//82HwAAX/z//f//NR4AAF/8//3//zUeAABe/P/9//81HgAAXvz//f//NR4AAF38//3//zQdAABd+//9//80HQAAXP3//P//NB0AAFz7//z//zQdAABb+//8//8zHAAAW/v//P//MxwAAFr7//z//zMcAABa+//8//8zHAAAWfv/+///MhsAAFn7//v//zIbAABY+//7//8yGwAAWPv/+///MhsAAFf7//v//zEaAABX+v/7//8xGgAAVvv/+v//MRoAAFb6//r//zEaAABV+v/6//8wGQAAVfr/+v//MBkAAFT6//r//zAZAABU+v/6//8wGQAAU/r/+f//LxgAAFP6//n//y8YAABS+v/5//8vGAAAUvr/+f//LxgAAFH5//n//y4XAABR+f/4//8uFwAAUPn/+P//LhcAAFD5//j//y4XAABO+f/4//8tFgAATvn/+P//LRYAAE35//f//y0WAABO+f/3//8sFQAATfj/9///LBUAAE34//f//ywVAABM+P/3//8sFQAAS/j/9v//KxQAAEv4//b//ysUAABK+P/2//8rFAAASvj/9v//KxQAAEn4//b//yoTAABJ+P/1//8qEwAASPj/9f//KhMAAEj3//X//yoTAABH9//1//8pEgAAR/f/9P//KRIAAEb3//T//ykSAABG9//0//8pEgAARff/9P//KBEAAEXu//T//ygRAABE9//z//8oEQAARPf/8///KBEAAEP3//P//ycQAABD9//z//8nEAAAQvf/8v//JxAAAEL3//L//ycQAABB9//y//8mDwAAQfb/8v//Jg8AAED2//L//yYPAABA9v/x//8mDwAAP/b/8f//JQ4AAD/2//H//yUOAAA+9v/x//8lDgAAPvb/8P//JQ4AAD32//D//yQNAAA99v/w//8kDQAAPPX/8P//JA0AADz1/+///yQNAAA79f/v//8jDAAAO/X/7///IwwAADr1/+///yMMAAA69f/u//8jDAAAOfX/7v//IgsAADn1/+7//yILAAA49f/u//8iCwAAOPT/7v//IgsAADf0/+3//yEKAAA39P/t//8hCgAANvT/7f//IQoAADb0/+3//yEKAAA18//t//8gCQAANfT/7P//IAkAADTz/+z//yAJAAA08//s//8gCQAAM/P/7P//HwgAADPz/+v//x8IAAA=" type="audio/wav">
+    </audio>
+
+    <script src="js/game.js"></script>
+    <script src="js/ai.js"></script>
+    <script src="js/sgf.js"></script>
+    <script src="js/online.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
