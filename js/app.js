@@ -212,6 +212,7 @@ class BadukApp {
         document.getElementById('btn-undo').addEventListener('click', () => this.handleUndo());
         document.getElementById('btn-pass').addEventListener('click', () => this.handlePass());
         document.getElementById('btn-count').addEventListener('click', () => this.toggleCountingMode());
+        document.getElementById('btn-resign').addEventListener('click', () => this.handleResign());
         document.getElementById('btn-settings').addEventListener('click', () => this.openSettingsModal());
 
         // 설정 모달
@@ -475,6 +476,17 @@ class BadukApp {
                 this.render();
             }
         }
+    }
+
+    handleResign() {
+        if (this.game.gameOver) return;
+
+        const currentPlayer = this.game.currentPlayer === 'black' ? '흑' : '백';
+        if (!confirm(`${currentPlayer}이(가) 기권하시겠습니까?`)) return;
+
+        const result = this.game.resign();
+        const winner = result.winner === 'black' ? '흑' : '백';
+        this.showGameOver(`${winner} 불계승 (기권)`);
     }
 
     getLastMoveFromHistory() {

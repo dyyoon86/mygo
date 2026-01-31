@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-YXJSQD3KBJ"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-YXJSQD3KBJ');
+    </script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>체스 온라인 - 무료 웹 체스 게임</title>
+    <meta name="description" content="무료 온라인 체스 게임. 설치 없이 브라우저에서 바로 체스를 즐기세요. AI 대국, 로컬 대국, PGN 기보 저장 지원. 캐슬링, 앙파상, 프로모션 등 모든 규칙 적용.">
+    <meta name="keywords" content="체스, 체스 게임, 온라인 체스, 무료 체스, 체스 AI, Chess, 체크메이트">
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://baduk.ionflow.xyz/chess.html">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="체스 온라인">
+    <meta property="og:title" content="체스 온라인 - 무료 웹 체스 게임">
+    <meta property="og:description" content="무료 온라인 체스 게임. 설치 없이 브라우저에서 바로 체스를 즐기세요.">
+    <meta property="og:url" content="https://baduk.ionflow.xyz/chess.html">
+    <meta property="og:locale" content="ko_KR">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="체스 온라인 - 무료 웹 체스 게임">
+    <meta name="twitter:description" content="무료 온라인 체스 게임. 설치 없이 브라우저에서 바로 체스를 즐기세요.">
+
+    <!-- Preconnect for performance -->
+    <link rel="preconnect" href="https://pagead2.googlesyndication.com">
+    <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com">
+
+    <!-- Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3465506500903274"
+        crossorigin="anonymous"></script>
+
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="chess-styles.css">
+
+    <style>
+        /* Header */
+        .site-header {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            border-bottom: 1px solid #ddd;
+            padding: 0 20px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .site-header .logo {
+            font-size: 18px;
+            font-weight: 600;
+            text-decoration: none;
+            color: #333;
+        }
+
+        .site-header nav a {
+            font-size: 13px;
+            color: #666;
+            text-decoration: none;
+            margin-left: 20px;
+        }
+
+        .site-header nav a:hover {
+            color: #333;
+        }
+
+        .site-header nav a.active {
+            color: #6b8e23;
+            font-weight: 600;
+        }
+
+        /* Ad Space */
+        .ad-container {
+            max-width: 728px;
+            margin: 0 auto 10px;
+            min-height: 90px;
+            background: rgba(255,255,255,0.5);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 12px;
+        }
+
+        /* Footer */
+        .site-footer {
+            background: #fff;
+            padding: 15px 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #86868b;
+            border-top: 1px solid #ddd;
+            margin-top: 10px;
+        }
+
+        .site-footer a {
+            color: #86868b;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+
+        .site-footer a:hover {
+            color: #333;
+        }
+
+        /* Adjust game container for header */
+        .game-container {
+            padding-top: 60px;
+            padding-bottom: 10px;
+            min-height: calc(100vh - 100px);
+        }
+
+        @media (max-width: 600px) {
+            .site-header nav {
+                display: none;
+            }
+            .ad-container {
+                min-height: 60px;
+                margin: 0 10px 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <a href="/chess.html" class="logo">체스 온라인</a>
+        <nav>
+            <a href="/">바둑</a>
+            <a href="/chess.html" class="active">체스</a>
+            <a href="/pages/about.html">소개</a>
+            <a href="/pages/privacy.html">개인정보</a>
+            <a href="/pages/terms.html">약관</a>
+        </nav>
+    </header>
+
+    <!-- Top Ad -->
+    <div class="ad-container" id="ad-top">
+        <!-- AdSense Ad Unit -->
+        <ins class="adsbygoogle"
+            style="display:block"
+            data-ad-client="ca-pub-3465506500903274"
+            data-ad-slot="YOUR_AD_SLOT_ID"
+            data-ad-format="auto"
+            data-full-width-responsive="true"></ins>
+        <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+    </div>
+
+    <!-- Main Game Container -->
+    <div class="game-container">
+        <div class="chess-container">
+            <div class="chess-main">
+                <!-- Turn Indicator -->
+                <div class="turn-indicator" id="turn-indicator">
+                    백의 차례
+                </div>
+
+                <!-- Board Container -->
+                <div class="board-container">
+                    <canvas id="chess-board"></canvas>
+                </div>
+
+                <!-- Game Info -->
+                <div class="game-info">
+                    <div class="captured-pieces">
+                        <span class="label">백 캡처:</span>
+                        <span class="pieces" id="white-captured"></span>
+                    </div>
+                    <div class="captured-pieces">
+                        <span class="label">흑 캡처:</span>
+                        <span class="pieces" id="black-captured"></span>
+                    </div>
+                </div>
+
+                <!-- Move History -->
+                <div class="history-container">
+                    <div class="label">기보</div>
+                    <div id="move-history"></div>
+                </div>
+
+                <!-- Control Buttons -->
+                <div class="controls">
+                    <button class="control-btn" id="btn-new-game">새 게임</button>
+                    <button class="control-btn" id="btn-undo" disabled>되돌리기</button>
+                    <button class="control-btn" id="btn-redo" disabled>다시 실행</button>
+                    <button class="control-btn secondary" id="btn-settings">설정</button>
+                    <button class="control-btn danger" id="btn-resign">기권</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Ad -->
+    <div class="ad-container" id="ad-bottom">
+        <!-- AdSense Ad Unit -->
+        <ins class="adsbygoogle"
+            style="display:block"
+            data-ad-client="ca-pub-3465506500903274"
+            data-ad-slot="YOUR_AD_SLOT_ID_2"
+            data-ad-format="auto"
+            data-full-width-responsive="true"></ins>
+        <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <p>Copyright &copy; 2026 체스 온라인</p>
+        <div style="margin-top: 8px;">
+            <a href="/">바둑</a>
+            <a href="/pages/about.html">소개</a>
+            <a href="/pages/privacy.html">개인정보처리방침</a>
+            <a href="/pages/terms.html">이용약관</a>
+        </div>
+    </footer>
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="settings-modal">
+        <div class="modal">
+            <h2 class="modal-title">설정</h2>
+
+            <div class="setting-group">
+                <label>게임 모드</label>
+                <select id="game-mode">
+                    <option value="ai">AI 대국</option>
+                    <option value="local">로컬 대국</option>
+                </select>
+            </div>
+
+            <div class="setting-group">
+                <label>AI 난이도</label>
+                <select id="ai-level">
+                    <option value="1">초급</option>
+                    <option value="2" selected>중급</option>
+                    <option value="3">고급</option>
+                </select>
+            </div>
+
+            <div class="setting-group">
+                <label>AI 색상</label>
+                <select id="ai-color">
+                    <option value="black">흑 (AI가 후공)</option>
+                    <option value="white">백 (AI가 선공)</option>
+                </select>
+            </div>
+
+            <div class="setting-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="sound-enabled" checked>
+                    소리
+                </label>
+            </div>
+
+            <div class="setting-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="board-flipped">
+                    보드 뒤집기 (흑 시점)
+                </label>
+            </div>
+
+            <div class="pgn-buttons">
+                <button class="control-btn secondary" id="btn-save-pgn">PGN 저장</button>
+                <button class="control-btn secondary" id="btn-load-pgn">PGN 불러오기</button>
+            </div>
+            <input type="file" id="pgn-file-input" accept=".pgn,.txt">
+
+            <div class="modal-buttons">
+                <button class="control-btn" id="btn-save-settings">저장</button>
+                <button class="control-btn secondary" id="btn-close-settings">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div class="modal-overlay" id="gameover-modal">
+        <div class="modal">
+            <div class="gameover-content">
+                <h2 class="modal-title">게임 종료</h2>
+                <div id="game-result">백 승리!</div>
+                <div id="game-reason">체크메이트</div>
+
+                <div class="modal-buttons">
+                    <button class="control-btn" id="btn-rematch">다시 하기</button>
+                    <button class="control-btn secondary" id="btn-close-gameover">닫기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Promotion Modal -->
+    <div class="modal-overlay" id="promotion-modal">
+        <div class="modal">
+            <div class="promotion-content">
+                <h2 class="modal-title">프로모션</h2>
+                <p>승격할 기물을 선택하세요</p>
+
+                <div class="promotion-pieces">
+                    <button class="promotion-piece" data-piece="Q">♕</button>
+                    <button class="promotion-piece" data-piece="R">♖</button>
+                    <button class="promotion-piece" data-piece="B">♗</button>
+                    <button class="promotion-piece" data-piece="N">♘</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast"></div>
+
+    <!-- Curtain Effect -->
+    <div id="curtain"></div>
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "체스 온라인",
+        "url": "https://baduk.ionflow.xyz/chess.html",
+        "description": "무료 온라인 체스 게임. 설치 없이 브라우저에서 바로 체스를 즐기세요. 모든 현대 체스 규칙 적용.",
+        "applicationCategory": "GameApplication",
+        "operatingSystem": "Web Browser",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+        },
+        "inLanguage": "ko",
+        "featureList": [
+            "캐슬링 (킹사이드, 퀸사이드)",
+            "앙파상",
+            "폰 프로모션",
+            "체크메이트 감지",
+            "스테일메이트 감지",
+            "50수 규칙",
+            "3회 반복",
+            "기물 부족 무승부",
+            "AI 대국 (3단계 난이도)",
+            "PGN 기보 저장/불러오기"
+        ]
+    }
+    </script>
+
+    <script src="js/chess-game.js"></script>
+    <script src="js/chess-ai.js"></script>
+    <script src="js/chess-pgn.js"></script>
+    <script src="js/chess-app.js"></script>
+</body>
+</html>

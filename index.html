@@ -1,12 +1,160 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-YXJSQD3KBJ"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-YXJSQD3KBJ');
+    </script>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>바둑</title>
+    <title>바둑 온라인 - 무료 웹 바둑 게임</title>
+    <meta name="description" content="무료 온라인 바둑 게임. 설치 없이 브라우저에서 바로 바둑을 즐기세요. AI 대국, 로컬 대국, 기보 저장 지원.">
+    <meta name="keywords" content="바둑, 바둑 게임, 온라인 바둑, 무료 바둑, 바둑 AI, Go game, Baduk">
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://baduk.ionflow.xyz/">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="바둑 온라인">
+    <meta property="og:title" content="바둑 온라인 - 무료 웹 바둑 게임">
+    <meta property="og:description" content="무료 온라인 바둑 게임. 설치 없이 브라우저에서 바로 바둑을 즐기세요.">
+    <meta property="og:url" content="https://baduk.ionflow.xyz/">
+    <meta property="og:locale" content="ko_KR">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="바둑 온라인 - 무료 웹 바둑 게임">
+    <meta name="twitter:description" content="무료 온라인 바둑 게임. 설치 없이 브라우저에서 바로 바둑을 즐기세요.">
+
+    <!-- Preconnect for performance -->
+    <link rel="preconnect" href="https://pagead2.googlesyndication.com">
+    <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com">
+
+    <!-- Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3465506500903274"
+        crossorigin="anonymous"></script>
+
     <link rel="stylesheet" href="styles.css">
+
+    <style>
+        /* Header */
+        .site-header {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            border-bottom: 1px solid #ddd;
+            padding: 0 20px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .site-header .logo {
+            font-size: 18px;
+            font-weight: 600;
+            text-decoration: none;
+            color: #333;
+        }
+
+        .site-header nav a {
+            font-size: 13px;
+            color: #666;
+            text-decoration: none;
+            margin-left: 20px;
+        }
+
+        .site-header nav a:hover {
+            color: #333;
+        }
+
+        /* Ad Space */
+        .ad-container {
+            max-width: 728px;
+            margin: 0 auto 10px;
+            min-height: 90px;
+            background: rgba(255,255,255,0.5);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 12px;
+        }
+
+        /* Footer */
+        .site-footer {
+            background: #fff;
+            padding: 15px 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #86868b;
+            border-top: 1px solid #ddd;
+            margin-top: 10px;
+        }
+
+        .site-footer a {
+            color: #86868b;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+
+        .site-footer a:hover {
+            color: #333;
+        }
+
+        /* Adjust game container for header */
+        .game-container {
+            padding-top: 60px;
+            padding-bottom: 10px;
+            min-height: calc(100vh - 100px);
+        }
+
+        @media (max-width: 600px) {
+            .site-header nav {
+                display: none;
+            }
+            .ad-container {
+                min-height: 60px;
+                margin: 0 10px 10px;
+            }
+        }
+    </style>
 </head>
 <body>
+    <!-- Header -->
+    <header class="site-header">
+        <a href="/" class="logo">바둑 온라인</a>
+        <nav>
+            <a href="/chess.html">체스</a>
+            <a href="/pages/about.html">소개</a>
+            <a href="/pages/privacy.html">개인정보</a>
+            <a href="/pages/terms.html">약관</a>
+        </nav>
+    </header>
+
+    <!-- Top Ad -->
+    <div class="ad-container" id="ad-top">
+        <!-- AdSense Ad Unit -->
+        <ins class="adsbygoogle"
+            style="display:block"
+            data-ad-client="ca-pub-3465506500903274"
+            data-ad-slot="YOUR_AD_SLOT_ID"
+            data-ad-format="auto"
+            data-full-width-responsive="true"></ins>
+        <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+    </div>
+
     <!-- 메인 게임 컨테이너 -->
     <div class="game-container">
         <div class="board-wrapper">
@@ -43,10 +191,33 @@
                 <button class="control-btn" id="btn-undo">무르기</button>
                 <button class="control-btn" id="btn-pass">패스</button>
                 <button class="control-btn" id="btn-count">개가</button>
+                <button class="control-btn danger" id="btn-resign">기권</button>
                 <button class="control-btn" id="btn-settings">설정</button>
             </div>
         </div>
     </div>
+
+    <!-- Bottom Ad -->
+    <div class="ad-container" id="ad-bottom">
+        <!-- AdSense Ad Unit -->
+        <ins class="adsbygoogle"
+            style="display:block"
+            data-ad-client="ca-pub-3465506500903274"
+            data-ad-slot="YOUR_AD_SLOT_ID_2"
+            data-ad-format="auto"
+            data-full-width-responsive="true"></ins>
+        <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <p>Copyright &copy; 2026 바둑 온라인</p>
+        <div style="margin-top: 8px;">
+            <a href="/pages/about.html">소개</a>
+            <a href="/pages/privacy.html">개인정보처리방침</a>
+            <a href="/pages/terms.html">이용약관</a>
+        </div>
+    </footer>
 
     <!-- 설정 모달 -->
     <div class="modal-overlay" id="settings-modal">
@@ -130,6 +301,25 @@
         <div class="curtain curtain-right"></div>
         <div class="curtain-text">새 게임</div>
     </div>
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "바둑 온라인",
+        "url": "https://baduk.ionflow.xyz/",
+        "description": "무료 온라인 바둑 게임. 설치 없이 브라우저에서 바로 바둑을 즐기세요.",
+        "applicationCategory": "GameApplication",
+        "operatingSystem": "Web Browser",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+        },
+        "inLanguage": "ko"
+    }
+    </script>
 
     <script src="js/game.js"></script>
     <script src="js/ai.js"></script>

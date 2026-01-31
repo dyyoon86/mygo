@@ -176,6 +176,17 @@ body {
     color: #fff;
 }
 
+.control-btn.danger {
+    background: #dc3545;
+    border-color: #dc3545;
+    color: #fff;
+}
+
+.control-btn.danger:hover {
+    background: #c82333;
+    border-color: #bd2130;
+}
+
 /* 모달 */
 .modal-overlay {
     position: fixed;
