@@ -178,6 +178,7 @@ class ChessApp {
         this.setupCanvas();
         this.bindEvents();
         this.loadSettings();
+        this.updateModeButtons();
         this.render();
         this.updateUI();
 
@@ -256,6 +257,11 @@ class ChessApp {
         document.getElementById('btn-create-room')?.addEventListener('click', () => this.createOnlineRoom());
         document.getElementById('btn-join-room')?.addEventListener('click', () => this.joinOnlineRoom());
         document.getElementById('btn-copy-room')?.addEventListener('click', () => this.copyRoomCode());
+
+        // Mode toggle buttons
+        document.getElementById('btn-mode-ai')?.addEventListener('click', () => this.setGameMode('ai'));
+        document.getElementById('btn-mode-local')?.addEventListener('click', () => this.setGameMode('local'));
+        document.getElementById('btn-mode-online')?.addEventListener('click', () => this.showOnlineModal());
 
         // Window resize
         window.addEventListener('resize', () => {
@@ -746,6 +752,13 @@ class ChessApp {
             const color = this.game.currentPlayer === ChessGame.WHITE ? '백' : '흑';
             let status = `${color}의 차례`;
 
+            // Mode prefix
+            const modePrefix = {
+                'ai': '🤖 ',
+                'local': '👥 ',
+                'online': '🌐 '
+            };
+
             if (this.game.gameOver) {
                 if (this.game.gameResult === 'draw') {
                     status = '무승부';
@@ -762,10 +775,10 @@ class ChessApp {
                 status += ' (체크!)';
             }
 
-            turnIndicator.textContent = status;
+            turnIndicator.textContent = (modePrefix[this.gameMode] || '') + status;
 
             // Add appropriate classes
-            let classes = 'turn-indicator ' + this.game.currentPlayer;
+            let classes = 'turn-indicator floating ' + this.game.currentPlayer;
             if (this.gameMode === 'online' && this.online) {
                 classes += this.online.isMyTurn() ? ' my-turn' : ' opponent-turn';
             }
@@ -964,7 +977,10 @@ class ChessApp {
      * Save settings
      */
     saveSettings() {
-        this.gameMode = document.getElementById('game-mode').value;
+        const newMode = document.getElementById('game-mode').value;
+        const modeChanged = newMode !== this.gameMode;
+
+        this.gameMode = newMode;
         this.aiLevel = parseInt(document.getElementById('ai-level').value);
         this.aiColor = document.getElementById('ai-color').value;
         this.sound.setEnabled(document.getElementById('sound-enabled').checked);
@@ -983,8 +999,17 @@ class ChessApp {
             flipped: this.flipped
         }));
 
+        // Update mode buttons
+        this.updateModeButtons();
+
         this.hideSettings();
         this.render();
+        this.updateUI();
+
+        // Start new game if mode changed
+        if (modeChanged) {
+            this.newGame();
+        }
 
         // Show toast
         this.showToast('설정이 저장되었습니다');
@@ -1162,6 +1187,42 @@ class ChessApp {
             toast.classList.add('active');
             setTimeout(() => toast.classList.remove('active'), 2000);
         }
+    }
+
+    /**
+     * Set game mode and restart
+     */
+    setGameMode(mode) {
+        if (mode === this.gameMode) return;
+
+        // Disconnect online if switching away
+        if (this.gameMode === 'online' && this.online) {
+            this.online.disconnect();
+        }
+
+        this.gameMode = mode;
+        this.updateModeButtons();
+        this.newGame();
+
+        const modeNames = {
+            'ai': 'AI 대전',
+            'local': '1:1 로컬 대전',
+            'online': '온라인 대전'
+        };
+        this.showToast(`${modeNames[mode]} 모드`);
+    }
+
+    /**
+     * Update mode toggle button states
+     */
+    updateModeButtons() {
+        const modes = ['ai', 'local', 'online'];
+        modes.forEach(mode => {
+            const btn = document.getElementById(`btn-mode-${mode}`);
+            if (btn) {
+                btn.classList.toggle('active', mode === this.gameMode);
+            }
+        });
     }
 
     /**

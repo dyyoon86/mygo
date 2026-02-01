@@ -103,6 +103,40 @@
             background: rgba(255,80,80,0.4);
         }
 
+        /* Mode Toggle */
+        .mode-toggle {
+            display: flex;
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            padding: 3px;
+            gap: 2px;
+        }
+
+        .mode-btn {
+            background: transparent;
+            border: none;
+            color: rgba(255,255,255,0.5);
+            width: 36px;
+            height: 34px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mode-btn:hover {
+            color: #fff;
+            background: rgba(255,255,255,0.1);
+        }
+
+        .mode-btn.active {
+            background: rgba(255,255,255,0.2);
+            color: #fff;
+        }
+
         .site-header nav a {
             font-size: 13px;
             color: rgba(255,255,255,0.7);
@@ -227,7 +261,11 @@
         <a href="/chess.html" class="logo">체스</a>
         <div class="header-controls">
             <button class="header-btn" id="btn-new-game" title="새 게임">🔄</button>
-            <button class="header-btn" id="btn-online" title="온라인 대전">🌐</button>
+            <div class="mode-toggle" id="mode-toggle">
+                <button class="mode-btn active" id="btn-mode-ai" title="AI 대전">🤖</button>
+                <button class="mode-btn" id="btn-mode-local" title="1:1 로컬">👥</button>
+                <button class="mode-btn" id="btn-mode-online" title="온라인 대전">🌐</button>
+            </div>
             <button class="header-btn" id="btn-undo" title="되돌리기" disabled>↩</button>
             <button class="header-btn" id="btn-redo" title="다시 실행" disabled>↪</button>
             <button class="header-btn" id="btn-settings" title="설정">⚙</button>
