@@ -147,15 +147,15 @@ class ChessApp {
         this.aiColor = ChessGame.BLACK;
         this.playerName = '플레이어';
 
-        // Colors
+        // Colors - enhanced for dark background
         this.colors = {
             lightSquare: '#f0d9b5',
             darkSquare: '#b58863',
             selected: 'rgba(255, 255, 0, 0.5)',
-            validMove: 'rgba(0, 128, 0, 0.4)',
+            validMove: 'rgba(100, 200, 100, 0.5)',
             lastMove: 'rgba(155, 199, 0, 0.5)',
-            check: 'rgba(255, 0, 0, 0.5)',
-            coordinates: '#7c6a5a'
+            check: 'rgba(255, 50, 50, 0.6)',
+            coordinates: '#8a7a6a'
         };
 
         // Piece unicode characters
@@ -197,11 +197,12 @@ class ChessApp {
             return;
         }
 
-        // Set canvas size - larger board for better visibility
-        const container = this.canvas.parentElement;
-        const maxSize = window.innerWidth < 768 ? 560 : 720;
-        const size = Math.min(container.clientWidth - 20, maxSize);
-        this.cellSize = Math.floor((size - this.boardOffset * 2) / 8);
+        // Calculate maximum size to fill screen
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight - 60; // Account for header
+        const maxSize = Math.min(viewportWidth * 0.95, viewportHeight * 0.95);
+
+        this.cellSize = Math.floor((maxSize - this.boardOffset * 2) / 8);
         this.boardSize = this.cellSize * 8;
 
         this.canvas.width = this.boardSize + this.boardOffset * 2;
@@ -549,6 +550,23 @@ class ChessApp {
      * Draw the chess board
      */
     drawBoard() {
+        // Draw board border/frame
+        this.ctx.fillStyle = '#4a3728';
+        this.ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+        this.ctx.shadowBlur = 20;
+        this.ctx.shadowOffsetX = 5;
+        this.ctx.shadowOffsetY = 5;
+        this.ctx.fillRect(
+            this.boardOffset - 5,
+            this.boardOffset - 5,
+            this.boardSize + 10,
+            this.boardSize + 10
+        );
+        this.ctx.shadowBlur = 0;
+        this.ctx.shadowOffsetX = 0;
+        this.ctx.shadowOffsetY = 0;
+
+        // Draw squares
         for (let row = 0; row < 8; row++) {
             for (let col = 0; col < 8; col++) {
                 const isLight = (row + col) % 2 === 0;
@@ -566,8 +584,8 @@ class ChessApp {
      * Draw board coordinates
      */
     drawCoordinates() {
-        this.ctx.fillStyle = this.colors.coordinates;
-        this.ctx.font = `${Math.floor(this.cellSize * 0.25)}px Arial`;
+        this.ctx.fillStyle = '#ccc';
+        this.ctx.font = `bold ${Math.floor(this.cellSize * 0.22)}px Arial`;
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'middle';
 
@@ -575,14 +593,14 @@ class ChessApp {
         const files = this.flipped ? 'hgfedcba' : 'abcdefgh';
         for (let i = 0; i < 8; i++) {
             const x = this.boardOffset + i * this.cellSize + this.cellSize / 2;
-            this.ctx.fillText(files[i], x, this.boardOffset + this.boardSize + 15);
+            this.ctx.fillText(files[i], x, this.boardOffset + this.boardSize + 18);
         }
 
         // Ranks (1-8)
         const ranks = this.flipped ? '12345678' : '87654321';
         for (let i = 0; i < 8; i++) {
             const y = this.boardOffset + i * this.cellSize + this.cellSize / 2;
-            this.ctx.fillText(ranks[i], 12, y);
+            this.ctx.fillText(ranks[i], 14, y);
         }
     }
 

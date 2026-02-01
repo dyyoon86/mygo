@@ -2,9 +2,9 @@
 
 /* ===== Layout ===== */
 .chess-container {
-    max-width: 1200px;
+    max-width: 100%;
     margin: 0 auto;
-    padding: 20px;
+    padding: 0;
 }
 
 .chess-main {
@@ -29,12 +29,17 @@
 }
 
 .turn-indicator.white {
+    background: linear-gradient(135deg, #fff 0%, #f0f0f0 100%);
+    color: #333;
     border-left: 4px solid #fff;
-    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 10px rgba(255,255,255,0.3);
 }
 
 .turn-indicator.black {
+    background: linear-gradient(135deg, #444 0%, #222 100%);
+    color: #fff;
     border-left: 4px solid #333;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.5);
 }
 
 .turn-indicator::before {
@@ -53,6 +58,7 @@
 
 .turn-indicator.black::before {
     background: #333;
+    border: 2px solid #666;
 }
 
 /* ===== Board Container ===== */
