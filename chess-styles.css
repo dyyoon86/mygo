@@ -2,9 +2,9 @@
 
 /* ===== Layout ===== */
 .chess-container {
-    max-width: 800px;
+    max-width: 1200px;
     margin: 0 auto;
-    padding: 10px;
+    padding: 20px;
 }
 
 .chess-main {
@@ -75,9 +75,9 @@
     display: flex;
     justify-content: space-between;
     width: 100%;
-    max-width: 500px;
-    padding: 10px 0;
-    gap: 20px;
+    max-width: 700px;
+    padding: 15px 0;
+    gap: 30px;
 }
 
 .captured-pieces {
@@ -109,7 +109,7 @@
 /* ===== Move History ===== */
 .history-container {
     width: 100%;
-    max-width: 500px;
+    max-width: 700px;
 }
 
 .history-container .label {
@@ -120,13 +120,13 @@
 }
 
 #move-history {
-    max-height: 120px;
+    max-height: 150px;
     overflow-y: auto;
     background: #f8f4e6;
     border-radius: 8px;
-    padding: 8px;
+    padding: 10px;
     font-family: 'Consolas', monospace;
-    font-size: 13px;
+    font-size: 14px;
 }
 
 .move-row {
@@ -462,4 +462,98 @@
 /* ===== Hidden File Input ===== */
 #pgn-file-input {
     display: none;
+}
+
+/* ===== Online Panel ===== */
+.online-panel {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 15px;
+    background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+    border-radius: 12px;
+    margin-bottom: 10px;
+}
+
+.online-status {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.online-status.disconnected {
+    color: #999;
+}
+
+.online-status.connecting {
+    color: #ff9800;
+}
+
+.online-status.waiting {
+    color: #2196f3;
+}
+
+.online-status.connected {
+    color: #4caf50;
+}
+
+.room-code {
+    font-family: 'Consolas', monospace;
+    font-size: 16px;
+    font-weight: bold;
+    color: #333;
+    padding: 5px 10px;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 6px;
+}
+
+.control-btn.small {
+    padding: 5px 10px;
+    font-size: 12px;
+}
+
+/* ===== Online Modal ===== */
+.online-options {
+    margin: 20px 0;
+}
+
+.divider-text {
+    position: relative;
+}
+
+.divider-text::before,
+.divider-text::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 35%;
+    height: 1px;
+    background: #ddd;
+}
+
+.divider-text::before {
+    left: 0;
+}
+
+.divider-text::after {
+    right: 0;
+}
+
+#waiting-section {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* ===== Turn indicator colors for online ===== */
+.turn-indicator.my-turn {
+    background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
+    color: white;
+}
+
+.turn-indicator.opponent-turn {
+    background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+    color: #666;
 }

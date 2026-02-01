@@ -123,6 +123,7 @@ class ChessApp {
         this.ai = new ChessAI(this.game, 2);
         this.pgn = new PGNHandler();
         this.sound = new ChessSoundManager();
+        this.online = null; // Initialized when needed
 
         // Canvas setup
         this.canvas = null;
@@ -141,7 +142,7 @@ class ChessApp {
         this.flipped = false;
 
         // Game settings
-        this.gameMode = 'ai'; // 'ai' or 'local'
+        this.gameMode = 'ai'; // 'ai', 'local', or 'online'
         this.aiLevel = 2;
         this.aiColor = ChessGame.BLACK;
         this.playerName = '플레이어';
@@ -196,9 +197,10 @@ class ChessApp {
             return;
         }
 
-        // Set canvas size
+        // Set canvas size - larger board for better visibility
         const container = this.canvas.parentElement;
-        const size = Math.min(container.clientWidth - 20, 560);
+        const maxSize = window.innerWidth < 768 ? 560 : 720;
+        const size = Math.min(container.clientWidth - 20, maxSize);
         this.cellSize = Math.floor((size - this.boardOffset * 2) / 8);
         this.boardSize = this.cellSize * 8;
 
@@ -246,6 +248,13 @@ class ChessApp {
         document.querySelectorAll('.promotion-piece').forEach(btn => {
             btn.addEventListener('click', (e) => this.handlePromotion(e.target.dataset.piece));
         });
+
+        // Online modal events
+        document.getElementById('btn-online')?.addEventListener('click', () => this.showOnlineModal());
+        document.getElementById('btn-close-online')?.addEventListener('click', () => this.hideOnlineModal());
+        document.getElementById('btn-create-room')?.addEventListener('click', () => this.createOnlineRoom());
+        document.getElementById('btn-join-room')?.addEventListener('click', () => this.joinOnlineRoom());
+        document.getElementById('btn-copy-room')?.addEventListener('click', () => this.copyRoomCode());
 
         // Window resize
         window.addEventListener('resize', () => {
@@ -305,9 +314,10 @@ class ChessApp {
      * Handle square click for move selection
      */
     handleSquareClick(x, y) {
-        // Ignore if game over or AI's turn
+        // Ignore if game over or AI's turn or not my turn in online mode
         if (this.game.gameOver) return;
         if (this.gameMode === 'ai' && this.ai.isMyTurn()) return;
+        if (this.gameMode === 'online' && this.online && !this.online.isMyTurn()) return;
 
         const piece = this.game.getPiece(x, y);
 
@@ -387,6 +397,11 @@ class ChessApp {
             this.updateUI();
             this.render();
 
+            // Notify online opponent of move
+            if (this.gameMode === 'online' && this.online) {
+                this.online.onLocalMove(fromX, fromY, toX, toY, promotion);
+            }
+
             // Check game over
             if (this.game.gameOver) {
                 setTimeout(() => this.showGameOver(), 500);
@@ -428,6 +443,7 @@ class ChessApp {
         if (piece && piece.color === this.game.currentPlayer) {
             if (this.game.gameOver) return;
             if (this.gameMode === 'ai' && this.ai.isMyTurn()) return;
+            if (this.gameMode === 'online' && this.online && !this.online.isMyTurn()) return;
 
             this.isDragging = true;
             this.dragPiece = { x: pos.x, y: pos.y, piece };
@@ -718,14 +734,24 @@ class ChessApp {
                 } else {
                     status = `${this.game.gameResult === ChessGame.WHITE ? '백' : '흑'} 승리`;
                 }
-            } else if (this.ai.isThinking) {
+            } else if (this.gameMode === 'ai' && this.ai.isThinking) {
                 status = 'AI 생각 중...';
-            } else if (this.game.isInCheck(this.game.currentPlayer)) {
+            } else if (this.gameMode === 'online' && this.online) {
+                status = this.online.isMyTurn() ? '내 차례' : '상대방 차례';
+            }
+
+            if (!this.game.gameOver && this.game.isInCheck(this.game.currentPlayer)) {
                 status += ' (체크!)';
             }
 
             turnIndicator.textContent = status;
-            turnIndicator.className = 'turn-indicator ' + this.game.currentPlayer;
+
+            // Add appropriate classes
+            let classes = 'turn-indicator ' + this.game.currentPlayer;
+            if (this.gameMode === 'online' && this.online) {
+                classes += this.online.isMyTurn() ? ' my-turn' : ' opponent-turn';
+            }
+            turnIndicator.className = classes;
         }
 
         // Captured pieces
@@ -1117,6 +1143,112 @@ class ChessApp {
             toast.textContent = message;
             toast.classList.add('active');
             setTimeout(() => toast.classList.remove('active'), 2000);
+        }
+    }
+
+    /**
+     * Show online modal
+     */
+    showOnlineModal() {
+        const modal = document.getElementById('online-modal');
+        if (modal) {
+            // Reset UI
+            document.getElementById('waiting-section').style.display = 'none';
+            document.querySelector('.online-options').style.display = 'block';
+            modal.classList.add('active');
+        }
+    }
+
+    /**
+     * Hide online modal
+     */
+    hideOnlineModal() {
+        const modal = document.getElementById('online-modal');
+        if (modal) {
+            modal.classList.remove('active');
+        }
+    }
+
+    /**
+     * Create online room
+     */
+    async createOnlineRoom() {
+        try {
+            // Initialize online module if not already
+            if (!this.online) {
+                this.online = new ChessOnline(this);
+            }
+
+            // Set player name
+            const nameInput = document.getElementById('player-name');
+            this.playerName = nameInput?.value || '플레이어';
+
+            // Create room
+            const roomCode = await this.online.createRoom();
+
+            // Show waiting UI
+            document.querySelector('.online-options').style.display = 'none';
+            document.getElementById('waiting-section').style.display = 'block';
+            document.getElementById('display-room-code').textContent = roomCode;
+
+            this.showToast('방이 생성되었습니다. 코드를 공유하세요!');
+        } catch (err) {
+            console.error('Failed to create room:', err);
+            this.showToast('방 생성에 실패했습니다');
+        }
+    }
+
+    /**
+     * Join online room
+     */
+    async joinOnlineRoom() {
+        const roomCodeInput = document.getElementById('join-room-code');
+        const roomCode = roomCodeInput?.value?.trim();
+
+        if (!roomCode) {
+            this.showToast('방 코드를 입력하세요');
+            return;
+        }
+
+        try {
+            // Initialize online module if not already
+            if (!this.online) {
+                this.online = new ChessOnline(this);
+            }
+
+            // Set player name
+            const nameInput = document.getElementById('player-name');
+            this.playerName = nameInput?.value || '플레이어';
+
+            // Join room
+            await this.online.joinRoom(roomCode);
+
+            this.hideOnlineModal();
+            this.showToast('방에 참가했습니다!');
+
+            // Show online panel
+            const onlinePanel = document.getElementById('online-panel');
+            if (onlinePanel) {
+                onlinePanel.style.display = 'flex';
+            }
+        } catch (err) {
+            console.error('Failed to join room:', err);
+            this.showToast('방 참가에 실패했습니다');
+        }
+    }
+
+    /**
+     * Copy room code to clipboard
+     */
+    async copyRoomCode() {
+        const roomCode = document.getElementById('display-room-code')?.textContent;
+        if (roomCode) {
+            try {
+                await navigator.clipboard.writeText(roomCode);
+                this.showToast('방 코드가 복사되었습니다');
+            } catch (err) {
+                prompt('방 코드를 복사하세요:', roomCode);
+            }
         }
     }
 }
