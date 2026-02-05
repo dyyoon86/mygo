@@ -700,16 +700,31 @@ class ChessApp {
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'middle';
 
-        // Shadow
-        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-        this.ctx.fillText(unicode, centerX + 2, centerY + 2);
+        // Rotate black pieces 180 degrees so they face the opposite direction
+        if (piece.color === ChessGame.BLACK) {
+            this.ctx.save();
+            this.ctx.translate(centerX, centerY);
+            this.ctx.rotate(Math.PI);
 
-        // Piece
-        this.ctx.fillStyle = piece.color === ChessGame.WHITE ? '#fff' : '#000';
-        this.ctx.fillText(unicode, centerX, centerY);
+            // Shadow
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            this.ctx.fillText(unicode, -2, -2);
 
-        // Outline for white pieces
-        if (piece.color === ChessGame.WHITE) {
+            // Piece
+            this.ctx.fillStyle = '#000';
+            this.ctx.fillText(unicode, 0, 0);
+
+            this.ctx.restore();
+        } else {
+            // Shadow
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            this.ctx.fillText(unicode, centerX + 2, centerY + 2);
+
+            // Piece
+            this.ctx.fillStyle = '#fff';
+            this.ctx.fillText(unicode, centerX, centerY);
+
+            // Outline for white pieces
             this.ctx.strokeStyle = '#333';
             this.ctx.lineWidth = 1;
             this.ctx.strokeText(unicode, centerX, centerY);
@@ -727,15 +742,31 @@ class ChessApp {
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'middle';
 
-        // Shadow
-        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-        this.ctx.fillText(unicode, this.dragPos.x + 3, this.dragPos.y + 3);
+        // Rotate black pieces 180 degrees so they face the opposite direction
+        if (piece.color === ChessGame.BLACK) {
+            this.ctx.save();
+            this.ctx.translate(this.dragPos.x, this.dragPos.y);
+            this.ctx.rotate(Math.PI);
 
-        // Piece
-        this.ctx.fillStyle = piece.color === ChessGame.WHITE ? '#fff' : '#000';
-        this.ctx.fillText(unicode, this.dragPos.x, this.dragPos.y);
+            // Shadow
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            this.ctx.fillText(unicode, -3, -3);
 
-        if (piece.color === ChessGame.WHITE) {
+            // Piece
+            this.ctx.fillStyle = '#000';
+            this.ctx.fillText(unicode, 0, 0);
+
+            this.ctx.restore();
+        } else {
+            // Shadow
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            this.ctx.fillText(unicode, this.dragPos.x + 3, this.dragPos.y + 3);
+
+            // Piece
+            this.ctx.fillStyle = '#fff';
+            this.ctx.fillText(unicode, this.dragPos.x, this.dragPos.y);
+
+            // Outline for white pieces
             this.ctx.strokeStyle = '#333';
             this.ctx.lineWidth = 1;
             this.ctx.strokeText(unicode, this.dragPos.x, this.dragPos.y);
