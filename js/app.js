@@ -664,35 +664,66 @@ class BadukApp {
         const size = this.game.size;
         const face = this.settings.faceEnabled;
 
-        // 1) 돌 본체 (그림자 포함)
-        for (let x = 0; x < size; x++) {
-            for (let y = 0; y < size; y++) {
-                if (board[x][y]) this.drawStone(x, y, board[x][y]);
-            }
-        }
-
-        // 2) 연결 브릿지 — 돌 위에 겹쳐 그려서 합체 효과
         if (face) {
+            // === 표정 모드: 그룹 합체 렌더링 ===
+
+            // 1) 그림자 전체 (브릿지 + 돌)
             for (let x = 0; x < size; x++) {
                 for (let y = 0; y < size; y++) {
                     const c = board[x][y];
                     if (!c) continue;
-                    if (x + 1 < size && board[x + 1][y] === c)
-                        this._drawBridge(x, y, x + 1, y, c);
-                    if (y + 1 < size && board[x][y + 1] === c)
-                        this._drawBridge(x, y, x, y + 1, c);
+                    const pos = this.boardToCanvas(x, y);
+                    // 브릿지 그림자
+                    if (x + 1 < size && board[x + 1][y] === c) {
+                        const p2 = this.boardToCanvas(x + 1, y);
+                        this.ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                        this.ctx.fillRect(pos.x + 2, pos.y - this.stoneRadius + 2,
+                            p2.x - pos.x, this.stoneRadius * 2);
+                    }
+                    if (y + 1 < size && board[x][y + 1] === c) {
+                        const p2 = this.boardToCanvas(x, y + 1);
+                        this.ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                        this.ctx.fillRect(pos.x - this.stoneRadius + 2, pos.y + 2,
+                            this.stoneRadius * 2, p2.y - pos.y);
+                    }
+                    // 돌 그림자
+                    this.ctx.beginPath();
+                    this.ctx.arc(pos.x + 2, pos.y + 2, this.stoneRadius, 0, Math.PI * 2);
+                    this.ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                    this.ctx.fill();
                 }
             }
-            // 연결부 위에 돌 테두리 다시 그려서 둥근 끝 유지
+
+            // 2) 브릿지 본체 (돌 크기와 동일한 두께)
             for (let x = 0; x < size; x++) {
                 for (let y = 0; y < size; y++) {
-                    if (board[x][y]) this._redrawStoneTop(x, y, board[x][y]);
+                    const c = board[x][y];
+                    if (!c) continue;
+                    const pos = this.boardToCanvas(x, y);
+                    const fillColor = c === 'black' ? '#303030' : '#e2e2e2';
+                    if (x + 1 < size && board[x + 1][y] === c) {
+                        const p2 = this.boardToCanvas(x + 1, y);
+                        this.ctx.fillStyle = fillColor;
+                        this.ctx.fillRect(pos.x, pos.y - this.stoneRadius,
+                            p2.x - pos.x, this.stoneRadius * 2);
+                    }
+                    if (y + 1 < size && board[x][y + 1] === c) {
+                        const p2 = this.boardToCanvas(x, y + 1);
+                        this.ctx.fillStyle = fillColor;
+                        this.ctx.fillRect(pos.x - this.stoneRadius, pos.y,
+                            this.stoneRadius * 2, p2.y - pos.y);
+                    }
                 }
             }
-        }
 
-        // 3) 표정
-        if (face) {
+            // 3) 돌 본체 (그라디언트 원 — 브릿지 위에)
+            for (let x = 0; x < size; x++) {
+                for (let y = 0; y < size; y++) {
+                    if (board[x][y]) this._drawStoneBody(x, y, board[x][y]);
+                }
+            }
+
+            // 4) 표정
             for (let x = 0; x < size; x++) {
                 for (let y = 0; y < size; y++) {
                     if (!board[x][y]) continue;
@@ -703,35 +734,18 @@ class BadukApp {
                     }
                 }
             }
+        } else {
+            // === 기본 모드: 원래 렌더링 ===
+            for (let x = 0; x < size; x++) {
+                for (let y = 0; y < size; y++) {
+                    if (board[x][y]) this.drawStone(x, y, board[x][y]);
+                }
+            }
         }
     }
 
-    // 인접 같은색 돌 사이 브릿지 (돌 위에 그려짐)
-    _drawBridge(x1, y1, x2, y2, color) {
-        const ctx = this.ctx;
-        const p1 = this.boardToCanvas(x1, y1);
-        const p2 = this.boardToCanvas(x2, y2);
-        const r = this.stoneRadius * 0.85;
-
-        // 그림자
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
-        if (x1 !== x2) {
-            ctx.fillRect(p1.x + 2, p1.y - r + 2, p2.x - p1.x, r * 2);
-        } else {
-            ctx.fillRect(p1.x - r + 2, p1.y + 2, r * 2, p2.y - p1.y);
-        }
-
-        // 본체
-        ctx.fillStyle = color === 'black' ? '#2d2d2d' : '#e0e0e0';
-        if (x1 !== x2) {
-            ctx.fillRect(p1.x, p1.y - r, p2.x - p1.x, r * 2);
-        } else {
-            ctx.fillRect(p1.x - r, p1.y, r * 2, p2.y - p1.y);
-        }
-    }
-
-    // 브릿지 위에 돌 중심부를 다시 그려서 원형 유지
-    _redrawStoneTop(x, y, color) {
+    // 돌 본체만 (그림자 없이)
+    _drawStoneBody(x, y, color) {
         const ctx = this.ctx;
         const pos = this.boardToCanvas(x, y);
         const gradient = ctx.createRadialGradient(
@@ -748,7 +762,7 @@ class BadukApp {
             gradient.addColorStop(1, '#d0d0d0');
         }
         ctx.beginPath();
-        ctx.arc(pos.x, pos.y, this.stoneRadius * 0.92, 0, Math.PI * 2);
+        ctx.arc(pos.x, pos.y, this.stoneRadius, 0, Math.PI * 2);
         ctx.fillStyle = gradient;
         ctx.fill();
     }
