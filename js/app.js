@@ -660,9 +660,39 @@ class BadukApp {
     }
 
     drawStones() {
-        for (let x = 0; x < this.game.size; x++) {
-            for (let y = 0; y < this.game.size; y++) {
-                const stone = this.game.board[x][y];
+        const board = this.game.board;
+        const size = this.game.size;
+
+        // 1) 연결 브릿지 (그림자 → 본체 순서로)
+        if (this.settings.faceEnabled) {
+            // 그림자 패스
+            for (let x = 0; x < size; x++) {
+                for (let y = 0; y < size; y++) {
+                    const c = board[x][y];
+                    if (!c) continue;
+                    if (x + 1 < size && board[x + 1][y] === c)
+                        this._drawBridge(x, y, x + 1, y, c, true);
+                    if (y + 1 < size && board[x][y + 1] === c)
+                        this._drawBridge(x, y, x, y + 1, c, true);
+                }
+            }
+            // 본체 패스
+            for (let x = 0; x < size; x++) {
+                for (let y = 0; y < size; y++) {
+                    const c = board[x][y];
+                    if (!c) continue;
+                    if (x + 1 < size && board[x + 1][y] === c)
+                        this._drawBridge(x, y, x + 1, y, c, false);
+                    if (y + 1 < size && board[x][y + 1] === c)
+                        this._drawBridge(x, y, x, y + 1, c, false);
+                }
+            }
+        }
+
+        // 2) 돌 본체
+        for (let x = 0; x < size; x++) {
+            for (let y = 0; y < size; y++) {
+                const stone = board[x][y];
                 if (stone) {
                     this.drawStone(x, y, stone);
                     if (this.settings.faceEnabled) {
@@ -674,6 +704,37 @@ class BadukApp {
                     }
                 }
             }
+        }
+    }
+
+    // 인접 같은색 돌 사이 브릿지
+    _drawBridge(x1, y1, x2, y2, color, isShadow) {
+        const ctx = this.ctx;
+        const p1 = this.boardToCanvas(x1, y1);
+        const p2 = this.boardToCanvas(x2, y2);
+        const r = this.stoneRadius * 0.65;
+        const ox = isShadow ? 2 : 0;
+        const oy = isShadow ? 2 : 0;
+
+        if (isShadow) {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        } else {
+            ctx.fillStyle = color === 'black' ? '#2a2a2a' : '#e8e8e8';
+        }
+
+        // 수평 연결 (x 방향)
+        if (x1 !== x2) {
+            ctx.fillRect(
+                p1.x + ox, p1.y - r + oy,
+                p2.x - p1.x, r * 2
+            );
+        }
+        // 수직 연결 (y 방향)
+        if (y1 !== y2) {
+            ctx.fillRect(
+                p1.x - r + ox, p1.y + oy,
+                r * 2, p2.y - p1.y
+            );
         }
     }
 
