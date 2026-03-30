@@ -144,7 +144,8 @@ class BadukApp {
         this.mode = 'local';
 
         this.settings = {
-            soundEnabled: true
+            soundEnabled: true,
+            faceEnabled: true
         };
 
         // 개가 모드
@@ -244,6 +245,15 @@ class BadukApp {
             this.settings.soundEnabled = e.target.checked;
             this.saveSettings();
         });
+
+        const faceToggle = document.getElementById('face-enabled');
+        if (faceToggle) {
+            faceToggle.addEventListener('change', (e) => {
+                this.settings.faceEnabled = e.target.checked;
+                this.saveSettings();
+                this.render();
+            });
+        }
 
         // 기보 저장/불러오기
         document.getElementById('btn-save').addEventListener('click', () => this.saveSGF());
@@ -655,6 +665,13 @@ class BadukApp {
                 const stone = this.game.board[x][y];
                 if (stone) {
                     this.drawStone(x, y, stone);
+                    if (this.settings.faceEnabled) {
+                        const state = this.getStoneState(x, y);
+                        if (state) {
+                            const pos = this.boardToCanvas(x, y);
+                            this.drawFace(pos, stone, state);
+                        }
+                    }
                 }
             }
         }
@@ -692,6 +709,192 @@ class BadukApp {
         ctx.arc(pos.x, pos.y, this.stoneRadius, 0, Math.PI * 2);
         ctx.fillStyle = gradient;
         ctx.fill();
+    }
+
+    // 돌 상태 분석: 활로 수 기반 표정 결정
+    getStoneState(x, y) {
+        const stone = this.game.board[x][y];
+        if (!stone) return null;
+
+        const isLast = this.lastMove && this.lastMove.x === x && this.lastMove.y === y;
+        if (isLast) return 'confident';
+
+        const liberties = this.game.countLiberties(x, y);
+        const groupSize = this.game.getGroupSize(x, y);
+
+        if (liberties === 1) return 'panic';       // 단수! 위험
+        if (liberties === 2) return 'worried';      // 불안
+        if (liberties >= 4 || groupSize >= 5) return 'happy'; // 안전+대그룹
+        return 'calm';                              // 보통
+    }
+
+    // 돌 위에 표정 그리기
+    drawFace(pos, color, state) {
+        const ctx = this.ctx;
+        const r = this.stoneRadius;
+        const faceColor = color === 'black' ? '#fff' : '#222';
+        const blushColor = color === 'black' ? 'rgba(255,150,150,0.4)' : 'rgba(255,100,100,0.35)';
+
+        ctx.save();
+        ctx.translate(pos.x, pos.y);
+
+        switch (state) {
+            case 'happy':
+                this._drawHappyFace(ctx, r, faceColor, blushColor);
+                break;
+            case 'calm':
+                this._drawCalmFace(ctx, r, faceColor);
+                break;
+            case 'worried':
+                this._drawWorriedFace(ctx, r, faceColor);
+                break;
+            case 'panic':
+                this._drawPanicFace(ctx, r, faceColor, blushColor);
+                break;
+            case 'confident':
+                this._drawConfidentFace(ctx, r, faceColor);
+                break;
+        }
+
+        ctx.restore();
+    }
+
+    // 😊 행복 (활로 4+, 대그룹)
+    _drawHappyFace(ctx, r, fc, blush) {
+        const s = r * 0.22;
+        // 눈 (^ ^) 아치형
+        ctx.strokeStyle = fc;
+        ctx.lineWidth = Math.max(1.5, r * 0.1);
+        ctx.lineCap = 'round';
+        // 왼쪽 눈
+        ctx.beginPath();
+        ctx.arc(-s * 1.2, -s * 0.3, s * 0.7, Math.PI * 1.1, Math.PI * 1.9);
+        ctx.stroke();
+        // 오른쪽 눈
+        ctx.beginPath();
+        ctx.arc(s * 1.2, -s * 0.3, s * 0.7, Math.PI * 1.1, Math.PI * 1.9);
+        ctx.stroke();
+        // 볼터치
+        ctx.fillStyle = blush;
+        ctx.beginPath();
+        ctx.ellipse(-s * 2, s * 0.6, s * 0.7, s * 0.45, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(s * 2, s * 0.6, s * 0.7, s * 0.45, 0, 0, Math.PI * 2);
+        ctx.fill();
+        // 입 (큰 미소)
+        ctx.strokeStyle = fc;
+        ctx.lineWidth = Math.max(1.5, r * 0.09);
+        ctx.beginPath();
+        ctx.arc(0, s * 0.3, s * 1.1, Math.PI * 0.15, Math.PI * 0.85);
+        ctx.stroke();
+    }
+
+    // 😐 평온 (활로 2~3)
+    _drawCalmFace(ctx, r, fc) {
+        const s = r * 0.22;
+        // 눈 (· ·) 점
+        ctx.fillStyle = fc;
+        ctx.beginPath();
+        ctx.arc(-s * 1.2, -s * 0.2, s * 0.4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(s * 1.2, -s * 0.2, s * 0.4, 0, Math.PI * 2);
+        ctx.fill();
+        // 입 (일자)
+        ctx.strokeStyle = fc;
+        ctx.lineWidth = Math.max(1.5, r * 0.08);
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(-s * 0.8, s * 0.9);
+        ctx.lineTo(s * 0.8, s * 0.9);
+        ctx.stroke();
+    }
+
+    // 😟 불안 (활로 2)
+    _drawWorriedFace(ctx, r, fc) {
+        const s = r * 0.22;
+        // 눈 (;_;) 큰 눈
+        ctx.fillStyle = fc;
+        ctx.beginPath();
+        ctx.arc(-s * 1.2, -s * 0.2, s * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(s * 1.2, -s * 0.2, s * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+        // 눈썹 (걱정)
+        ctx.strokeStyle = fc;
+        ctx.lineWidth = Math.max(1.2, r * 0.07);
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(-s * 2, -s * 1.3);
+        ctx.lineTo(-s * 0.5, -s * 1);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(s * 2, -s * 1.3);
+        ctx.lineTo(s * 0.5, -s * 1);
+        ctx.stroke();
+        // 입 (물결)
+        ctx.beginPath();
+        ctx.moveTo(-s * 0.8, s * 0.9);
+        ctx.quadraticCurveTo(-s * 0.3, s * 1.3, 0, s * 0.8);
+        ctx.quadraticCurveTo(s * 0.3, s * 0.4, s * 0.8, s * 0.9);
+        ctx.stroke();
+    }
+
+    // 😱 공포 (단수! 활로 1)
+    _drawPanicFace(ctx, r, fc, blush) {
+        const s = r * 0.22;
+        // 눈 (O O) 크게 뜬 눈
+        ctx.strokeStyle = fc;
+        ctx.lineWidth = Math.max(1.5, r * 0.09);
+        ctx.beginPath();
+        ctx.arc(-s * 1.2, -s * 0.2, s * 0.65, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(s * 1.2, -s * 0.2, s * 0.65, 0, Math.PI * 2);
+        ctx.stroke();
+        // 눈동자
+        ctx.fillStyle = fc;
+        ctx.beginPath();
+        ctx.arc(-s * 1.2, -s * 0.1, s * 0.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(s * 1.2, -s * 0.1, s * 0.2, 0, Math.PI * 2);
+        ctx.fill();
+        // 땀방울
+        ctx.fillStyle = blush;
+        ctx.beginPath();
+        ctx.ellipse(s * 2.3, -s * 0.5, s * 0.3, s * 0.55, 0, 0, Math.PI * 2);
+        ctx.fill();
+        // 입 (O)
+        ctx.strokeStyle = fc;
+        ctx.lineWidth = Math.max(1.2, r * 0.08);
+        ctx.beginPath();
+        ctx.ellipse(0, s * 1, s * 0.5, s * 0.6, 0, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+
+    // 😎 자신감 (방금 착수)
+    _drawConfidentFace(ctx, r, fc) {
+        const s = r * 0.22;
+        // 눈 (- -) 여유 있는 반감은 눈
+        ctx.strokeStyle = fc;
+        ctx.lineWidth = Math.max(1.8, r * 0.11);
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(-s * 1.8, -s * 0.3);
+        ctx.lineTo(-s * 0.5, -s * 0.3);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(s * 0.5, -s * 0.3);
+        ctx.lineTo(s * 1.8, -s * 0.3);
+        ctx.stroke();
+        // 입 (씩 웃는 미소)
+        ctx.lineWidth = Math.max(1.5, r * 0.09);
+        ctx.beginPath();
+        ctx.arc(0, s * 0.2, s * 1, Math.PI * 0.1, Math.PI * 0.6);
+        ctx.stroke();
     }
 
     drawStonePreview(x, y) {
@@ -1019,7 +1222,8 @@ class BadukApp {
     // 설정 저장/불러오기
     saveSettings() {
         const data = {
-            soundEnabled: this.settings.soundEnabled
+            soundEnabled: this.settings.soundEnabled,
+            faceEnabled: this.settings.faceEnabled
         };
         localStorage.setItem('baduk_settings', JSON.stringify(data));
     }
@@ -1029,7 +1233,10 @@ class BadukApp {
         if (saved) {
             const data = JSON.parse(saved);
             this.settings.soundEnabled = data.soundEnabled ?? true;
+            this.settings.faceEnabled = data.faceEnabled ?? true;
             document.getElementById('sound-enabled').checked = this.settings.soundEnabled;
+            const faceEl = document.getElementById('face-enabled');
+            if (faceEl) faceEl.checked = this.settings.faceEnabled;
         }
     }
 }

@@ -353,6 +353,59 @@ class BadukGame {
         return { size: area.length, owner };
     }
 
+    // 그룹의 활로 수 계산
+    countLiberties(x, y) {
+        const color = this.board[x][y];
+        if (!color) return 0;
+
+        const visited = new Set();
+        const liberties = new Set();
+        const stack = [[x, y]];
+
+        while (stack.length > 0) {
+            const [cx, cy] = stack.pop();
+            const key = `${cx},${cy}`;
+            if (visited.has(key)) continue;
+            visited.add(key);
+
+            const neighbors = this.getNeighbors(cx, cy);
+            for (const [nx, ny] of neighbors) {
+                if (this.board[nx][ny] === null) {
+                    liberties.add(`${nx},${ny}`);
+                } else if (this.board[nx][ny] === color && !visited.has(`${nx},${ny}`)) {
+                    stack.push([nx, ny]);
+                }
+            }
+        }
+
+        return liberties.size;
+    }
+
+    // 그룹 크기 계산
+    getGroupSize(x, y) {
+        const color = this.board[x][y];
+        if (!color) return 0;
+
+        const visited = new Set();
+        const stack = [[x, y]];
+
+        while (stack.length > 0) {
+            const [cx, cy] = stack.pop();
+            const key = `${cx},${cy}`;
+            if (visited.has(key)) continue;
+            visited.add(key);
+
+            const neighbors = this.getNeighbors(cx, cy);
+            for (const [nx, ny] of neighbors) {
+                if (this.board[nx][ny] === color && !visited.has(`${nx},${ny}`)) {
+                    stack.push([nx, ny]);
+                }
+            }
+        }
+
+        return visited.size;
+    }
+
     // 게임 상태 직렬화
     serialize() {
         return {
