@@ -716,6 +716,39 @@ class BadukApp {
                 }
             }
 
+            // 2.5) 한 칸 떨어진 같은색 돌 — 약한 연결선
+            this.ctx.save();
+            this.ctx.setLineDash([3, 3]);
+            this.ctx.lineCap = 'round';
+            this.ctx.lineWidth = Math.max(1.5, this.stoneRadius * 0.12);
+            for (let x = 0; x < size; x++) {
+                for (let y = 0; y < size; y++) {
+                    const c = board[x][y];
+                    if (!c) continue;
+                    // 오른쪽 한 칸 비우고 같은색
+                    if (x + 2 < size && board[x + 1][y] === null && board[x + 2][y] === c) {
+                        const p1 = this.boardToCanvas(x, y);
+                        const p2 = this.boardToCanvas(x + 2, y);
+                        this.ctx.strokeStyle = c === 'black' ? 'rgba(60,60,60,0.45)' : 'rgba(180,180,180,0.6)';
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(p1.x + this.stoneRadius, p1.y);
+                        this.ctx.lineTo(p2.x - this.stoneRadius, p2.y);
+                        this.ctx.stroke();
+                    }
+                    // 아래쪽 한 칸 비우고 같은색
+                    if (y + 2 < size && board[x][y + 1] === null && board[x][y + 2] === c) {
+                        const p1 = this.boardToCanvas(x, y);
+                        const p2 = this.boardToCanvas(x, y + 2);
+                        this.ctx.strokeStyle = c === 'black' ? 'rgba(60,60,60,0.45)' : 'rgba(180,180,180,0.6)';
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(p1.x, p1.y + this.stoneRadius);
+                        this.ctx.lineTo(p2.x, p2.y - this.stoneRadius);
+                        this.ctx.stroke();
+                    }
+                }
+            }
+            this.ctx.restore();
+
             // 3) 돌 본체 (그라디언트 원 — 브릿지 위에)
             for (let x = 0; x < size; x++) {
                 for (let y = 0; y < size; y++) {
