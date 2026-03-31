@@ -708,14 +708,53 @@ class BadukApp {
                 }
             }
 
-            // 3) 돌 본체
+            // 3) 돌 본체 (뿌요뿌요: 그룹 돌은 평면색으로 블롭 합체)
             for (let x = 0; x < size; x++) {
                 for (let y = 0; y < size; y++) {
-                    if (board[x][y]) this._drawStoneBody(x, y, board[x][y]);
+                    const c = board[x][y];
+                    if (!c) continue;
+                    const grouped = this.game.getNeighbors(x, y).some(([nx, ny]) => board[nx][ny] === c);
+                    if (grouped) {
+                        const pos = this.boardToCanvas(x, y);
+                        this.ctx.fillStyle = c === 'black' ? '#303030' : '#e2e2e2';
+                        this.ctx.beginPath();
+                        this.ctx.arc(pos.x, pos.y, this.stoneRadius, 0, Math.PI * 2);
+                        this.ctx.fill();
+                    } else {
+                        this._drawStoneBody(x, y, c);
+                    }
                 }
             }
 
-            // 3.3) 대각선 — 손잡기 (양쪽 끊김점 모두 적돌일 때만 끊기)
+            // 3.1) 뿌요뿌요 젤리 하이라이트 (광택)
+            for (let x = 0; x < size; x++) {
+                for (let y = 0; y < size; y++) {
+                    const c = board[x][y];
+                    if (!c) continue;
+                    if (!this.game.getNeighbors(x, y).some(([nx, ny]) => board[nx][ny] === c)) continue;
+                    const pos = this.boardToCanvas(x, y);
+                    const r = this.stoneRadius;
+                    const hl = this.ctx.createRadialGradient(
+                        pos.x - r * 0.3, pos.y - r * 0.3, r * 0.05,
+                        pos.x, pos.y, r * 0.75
+                    );
+                    if (c === 'black') {
+                        hl.addColorStop(0, 'rgba(140,140,140,0.35)');
+                        hl.addColorStop(1, 'rgba(0,0,0,0)');
+                    } else {
+                        hl.addColorStop(0, 'rgba(255,255,255,0.5)');
+                        hl.addColorStop(1, 'rgba(0,0,0,0)');
+                    }
+                    this.ctx.fillStyle = hl;
+                    this.ctx.beginPath();
+                    this.ctx.arc(pos.x, pos.y, r, 0, Math.PI * 2);
+                    this.ctx.fill();
+                }
+            }
+
+            // 3.3) 대각선 — 손잡기
+            // ㄱ자 연결(끊김점에 같은색) → 이미 블롭 합체 → 스킵
+            // 양쪽 끊김점 모두 적돌 → 끊기
             for (let x = 0; x < size; x++) {
                 for (let y = 0; y < size; y++) {
                     const c = board[x][y];
@@ -725,14 +764,14 @@ class BadukApp {
                     if (x + 1 < size && y + 1 < size && board[x + 1][y + 1] === c) {
                         const cut1 = board[x + 1][y];
                         const cut2 = board[x][y + 1];
-                        if (!(cut1 === enemy && cut2 === enemy))
+                        if (cut1 !== c && cut2 !== c && !(cut1 === enemy && cut2 === enemy))
                             this._drawHandhold(x, y, x + 1, y + 1, c);
                     }
                     // 우상 대각
                     if (x + 1 < size && y - 1 >= 0 && board[x + 1][y - 1] === c) {
                         const cut1 = board[x + 1][y];
                         const cut2 = board[x][y - 1];
-                        if (!(cut1 === enemy && cut2 === enemy))
+                        if (cut1 !== c && cut2 !== c && !(cut1 === enemy && cut2 === enemy))
                             this._drawHandhold(x, y, x + 1, y - 1, c);
                     }
                 }
@@ -897,7 +936,7 @@ class BadukApp {
     // 뿌요뿌요 스타일 블롭 브릿지 (유기적 연결)
     _drawPuyoBridge(p1x, p1y, p2x, p2y, r, isVertical) {
         const ctx = this.ctx;
-        const squeeze = r * 0.4;
+        const squeeze = r * 0.15;
 
         ctx.beginPath();
         if (!isVertical) {
