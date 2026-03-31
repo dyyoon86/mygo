@@ -668,6 +668,19 @@ class BadukApp {
             // === 표정 모드 ===
             const opp = (c) => c === 'black' ? 'white' : 'black';
 
+            // 0) 그룹 ID 사전 계산 (대각선 판정용)
+            const groupId = Array.from({length: size}, () => new Array(size).fill(-1));
+            let gid = 0;
+            for (let x = 0; x < size; x++) {
+                for (let y = 0; y < size; y++) {
+                    if (board[x][y] && groupId[x][y] === -1) {
+                        const group = this._getGroup(x, y);
+                        group.forEach(p => { groupId[p.x][p.y] = gid; });
+                        gid++;
+                    }
+                }
+            }
+
             // 1) 그림자 (뿌요뿌요 블롭 + 돌)
             for (let x = 0; x < size; x++) {
                 for (let y = 0; y < size; y++) {
@@ -753,7 +766,7 @@ class BadukApp {
             }
 
             // 3.3) 대각선 — 손잡기
-            // ㄱ자 연결(끊김점에 같은색) → 이미 블롭 합체 → 스킵
+            // 같은 그룹 → 이미 블롭 합체 → 스킵
             // 양쪽 끊김점 모두 적돌 → 끊기
             for (let x = 0; x < size; x++) {
                 for (let y = 0; y < size; y++) {
@@ -761,17 +774,19 @@ class BadukApp {
                     if (!c) continue;
                     const enemy = opp(c);
                     // 우하 대각
-                    if (x + 1 < size && y + 1 < size && board[x + 1][y + 1] === c) {
+                    if (x + 1 < size && y + 1 < size && board[x + 1][y + 1] === c
+                        && groupId[x][y] !== groupId[x + 1][y + 1]) {
                         const cut1 = board[x + 1][y];
                         const cut2 = board[x][y + 1];
-                        if (cut1 !== c && cut2 !== c && !(cut1 === enemy && cut2 === enemy))
+                        if (!(cut1 === enemy && cut2 === enemy))
                             this._drawHandhold(x, y, x + 1, y + 1, c);
                     }
                     // 우상 대각
-                    if (x + 1 < size && y - 1 >= 0 && board[x + 1][y - 1] === c) {
+                    if (x + 1 < size && y - 1 >= 0 && board[x + 1][y - 1] === c
+                        && groupId[x][y] !== groupId[x + 1][y - 1]) {
                         const cut1 = board[x + 1][y];
                         const cut2 = board[x][y - 1];
-                        if (cut1 !== c && cut2 !== c && !(cut1 === enemy && cut2 === enemy))
+                        if (!(cut1 === enemy && cut2 === enemy))
                             this._drawHandhold(x, y, x + 1, y - 1, c);
                     }
                 }
