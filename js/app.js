@@ -723,11 +723,7 @@ class BadukApp {
                 }
             }
 
-            // 3.5) 한 칸 떨어진 같은색 돌 — 약한 점선 (돌 위에)
-            this.ctx.save();
-            this.ctx.setLineDash([4, 4]);
-            this.ctx.lineCap = 'round';
-            this.ctx.lineWidth = Math.max(2, this.stoneRadius * 0.15);
+            // 3.5) 한 칸 떨어진 같은색 돌 — 끄적거리는 연결선
             for (let x = 0; x < size; x++) {
                 for (let y = 0; y < size; y++) {
                     const c = board[x][y];
@@ -735,24 +731,17 @@ class BadukApp {
                     if (x + 2 < size && board[x + 1][y] === null && board[x + 2][y] === c) {
                         const p1 = this.boardToCanvas(x, y);
                         const p2 = this.boardToCanvas(x + 2, y);
-                        this.ctx.strokeStyle = c === 'black' ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.35)';
-                        this.ctx.beginPath();
-                        this.ctx.moveTo(p1.x + this.stoneRadius, p1.y);
-                        this.ctx.lineTo(p2.x - this.stoneRadius, p2.y);
-                        this.ctx.stroke();
+                        this._drawSketchLine(p1.x + this.stoneRadius, p1.y,
+                            p2.x - this.stoneRadius, p2.y, c);
                     }
                     if (y + 2 < size && board[x][y + 1] === null && board[x][y + 2] === c) {
                         const p1 = this.boardToCanvas(x, y);
                         const p2 = this.boardToCanvas(x, y + 2);
-                        this.ctx.strokeStyle = c === 'black' ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.35)';
-                        this.ctx.beginPath();
-                        this.ctx.moveTo(p1.x, p1.y + this.stoneRadius);
-                        this.ctx.lineTo(p2.x, p2.y - this.stoneRadius);
-                        this.ctx.stroke();
+                        this._drawSketchLine(p1.x, p1.y + this.stoneRadius,
+                            p2.x, p2.y - this.stoneRadius, c);
                     }
                 }
             }
-            this.ctx.restore();
 
             // 4) 표정
             for (let x = 0; x < size; x++) {
@@ -772,6 +761,52 @@ class BadukApp {
                     if (board[x][y]) this.drawStone(x, y, board[x][y]);
                 }
             }
+        }
+    }
+
+    // 끄적거리는 손그림 느낌 연결선
+    _drawSketchLine(x1, y1, x2, y2, color) {
+        const ctx = this.ctx;
+        const lw = Math.max(1.5, this.stoneRadius * 0.13);
+        // 돌 색에 맞춤: 검은돌=검은선, 흰돌=흰선
+        const strokeColor = color === 'black'
+            ? 'rgba(30, 30, 30, 0.55)'
+            : 'rgba(230, 230, 230, 0.7)';
+
+        // 2번 겹쳐 그려서 손으로 끄적거린 느낌
+        for (let pass = 0; pass < 2; pass++) {
+            ctx.save();
+            ctx.strokeStyle = strokeColor;
+            ctx.lineWidth = lw + (pass === 0 ? 0.5 : -0.3);
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.setLineDash([]);
+            ctx.beginPath();
+
+            const steps = 8;
+            const dx = (x2 - x1) / steps;
+            const dy = (y2 - y1) / steps;
+            // 흔들림 크기
+            const jitter = this.stoneRadius * 0.18;
+            // 시드 기반 (위치 기반 고정 흔들림, 렌더마다 동일)
+            const seed = (x1 * 7 + y1 * 13 + pass * 31) % 100;
+
+            ctx.moveTo(x1, y1);
+            for (let i = 1; i <= steps; i++) {
+                const px = x1 + dx * i;
+                const py = y1 + dy * i;
+                if (i < steps) {
+                    const hash = Math.sin(seed + i * 9.1) * 43758.5453;
+                    const ox = (hash - Math.floor(hash) - 0.5) * jitter;
+                    const hash2 = Math.sin(seed + i * 7.3) * 23421.6312;
+                    const oy = (hash2 - Math.floor(hash2) - 0.5) * jitter;
+                    ctx.lineTo(px + ox, py + oy);
+                } else {
+                    ctx.lineTo(px, py);
+                }
+            }
+            ctx.stroke();
+            ctx.restore();
         }
     }
 
