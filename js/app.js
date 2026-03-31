@@ -723,7 +723,7 @@ class BadukApp {
                 }
             }
 
-            // 3.5) 한 칸 떨어진 같은색 돌 — 끄적거리는 연결선
+            // 3.5) 한 칸 떨어진 같은색 돌 — 끈적한 연결선
             for (let x = 0; x < size; x++) {
                 for (let y = 0; y < size; y++) {
                     const c = board[x][y];
@@ -731,13 +731,13 @@ class BadukApp {
                     if (x + 2 < size && board[x + 1][y] === null && board[x + 2][y] === c) {
                         const p1 = this.boardToCanvas(x, y);
                         const p2 = this.boardToCanvas(x + 2, y);
-                        this._drawSketchLine(p1.x + this.stoneRadius, p1.y,
+                        this._drawStickyLine(p1.x + this.stoneRadius, p1.y,
                             p2.x - this.stoneRadius, p2.y, c);
                     }
                     if (y + 2 < size && board[x][y + 1] === null && board[x][y + 2] === c) {
                         const p1 = this.boardToCanvas(x, y);
                         const p2 = this.boardToCanvas(x, y + 2);
-                        this._drawSketchLine(p1.x, p1.y + this.stoneRadius,
+                        this._drawStickyLine(p1.x, p1.y + this.stoneRadius,
                             p2.x, p2.y - this.stoneRadius, c);
                     }
                 }
@@ -764,50 +764,49 @@ class BadukApp {
         }
     }
 
-    // 끄적거리는 손그림 느낌 연결선
-    _drawSketchLine(x1, y1, x2, y2, color) {
+    // 끈적한 찰떡 느낌 연결선
+    _drawStickyLine(x1, y1, x2, y2, color) {
         const ctx = this.ctx;
-        const lw = Math.max(1.5, this.stoneRadius * 0.13);
-        // 돌 색에 맞춤: 검은돌=검은선, 흰돌=흰선
-        const strokeColor = color === 'black'
-            ? 'rgba(30, 30, 30, 0.55)'
-            : 'rgba(230, 230, 230, 0.7)';
+        const r = this.stoneRadius;
 
-        // 2번 겹쳐 그려서 손으로 끄적거린 느낌
-        for (let pass = 0; pass < 2; pass++) {
+        // 돌 색에 맞춤: 검은돌=검은색, 흰돌=흰색
+        const baseColor = color === 'black' ? [30, 30, 30] : [240, 240, 240];
+
+        const mx = (x1 + x2) / 2;
+        const my = (y1 + y2) / 2;
+        // 약간 아래로 처지는 느낌 (중력)
+        const isHorizontal = Math.abs(x2 - x1) > Math.abs(y2 - y1);
+        const sagX = isHorizontal ? 0 : r * 0.15;
+        const sagY = isHorizontal ? r * 0.15 : 0;
+
+        // 여러 겹으로 그려서 끈적+퍼지는 느낌
+        const layers = [
+            { width: r * 0.5, alpha: 0.08 },  // 넓은 번짐
+            { width: r * 0.32, alpha: 0.12 },  // 중간
+            { width: r * 0.18, alpha: 0.25 },  // 코어
+        ];
+
+        for (const layer of layers) {
             ctx.save();
-            ctx.strokeStyle = strokeColor;
-            ctx.lineWidth = lw + (pass === 0 ? 0.5 : -0.3);
+            ctx.strokeStyle = `rgba(${baseColor[0]},${baseColor[1]},${baseColor[2]},${layer.alpha})`;
+            ctx.lineWidth = layer.width;
             ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-            ctx.setLineDash([]);
             ctx.beginPath();
-
-            const steps = 8;
-            const dx = (x2 - x1) / steps;
-            const dy = (y2 - y1) / steps;
-            // 흔들림 크기
-            const jitter = this.stoneRadius * 0.18;
-            // 시드 기반 (위치 기반 고정 흔들림, 렌더마다 동일)
-            const seed = (x1 * 7 + y1 * 13 + pass * 31) % 100;
-
             ctx.moveTo(x1, y1);
-            for (let i = 1; i <= steps; i++) {
-                const px = x1 + dx * i;
-                const py = y1 + dy * i;
-                if (i < steps) {
-                    const hash = Math.sin(seed + i * 9.1) * 43758.5453;
-                    const ox = (hash - Math.floor(hash) - 0.5) * jitter;
-                    const hash2 = Math.sin(seed + i * 7.3) * 23421.6312;
-                    const oy = (hash2 - Math.floor(hash2) - 0.5) * jitter;
-                    ctx.lineTo(px + ox, py + oy);
-                } else {
-                    ctx.lineTo(px, py);
-                }
-            }
+            ctx.quadraticCurveTo(mx + sagX, my + sagY, x2, y2);
             ctx.stroke();
             ctx.restore();
         }
+
+        // 양쪽 끝 볼록한 방울 (찰떡이 늘어나는 시작점)
+        const blobR = r * 0.12;
+        ctx.fillStyle = `rgba(${baseColor[0]},${baseColor[1]},${baseColor[2]},0.3)`;
+        ctx.beginPath();
+        ctx.arc(x1, y1, blobR, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x2, y2, blobR, 0, Math.PI * 2);
+        ctx.fill();
     }
 
     // 돌 본체만 (그림자 없이)
