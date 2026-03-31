@@ -668,49 +668,42 @@ class BadukApp {
             // === 표정 모드 ===
             const opp = (c) => c === 'black' ? 'white' : 'black';
 
-            // 1) 그림자 (브릿지 + 돌)
+            // 1) 그림자 (뿌요뿌요 블롭 + 돌)
             for (let x = 0; x < size; x++) {
                 for (let y = 0; y < size; y++) {
                     const c = board[x][y];
                     if (!c) continue;
                     const pos = this.boardToCanvas(x, y);
+                    this.ctx.fillStyle = 'rgba(0,0,0,0.3)';
                     if (x + 1 < size && board[x + 1][y] === c) {
                         const p2 = this.boardToCanvas(x + 1, y);
-                        this.ctx.fillStyle = 'rgba(0,0,0,0.3)';
-                        this.ctx.fillRect(pos.x + 2, pos.y - this.stoneRadius + 2,
-                            p2.x - pos.x, this.stoneRadius * 2);
+                        this._drawPuyoBridge(pos.x + 2, pos.y + 2, p2.x + 2, p2.y + 2, this.stoneRadius, false);
                     }
                     if (y + 1 < size && board[x][y + 1] === c) {
                         const p2 = this.boardToCanvas(x, y + 1);
-                        this.ctx.fillStyle = 'rgba(0,0,0,0.3)';
-                        this.ctx.fillRect(pos.x - this.stoneRadius + 2, pos.y + 2,
-                            this.stoneRadius * 2, p2.y - pos.y);
+                        this._drawPuyoBridge(pos.x + 2, pos.y + 2, p2.x + 2, p2.y + 2, this.stoneRadius, true);
                     }
                     this.ctx.beginPath();
                     this.ctx.arc(pos.x + 2, pos.y + 2, this.stoneRadius, 0, Math.PI * 2);
-                    this.ctx.fillStyle = 'rgba(0,0,0,0.3)';
                     this.ctx.fill();
                 }
             }
 
-            // 2) 브릿지 본체
+            // 2) 뿌요뿌요 블롭 본체
             for (let x = 0; x < size; x++) {
                 for (let y = 0; y < size; y++) {
                     const c = board[x][y];
                     if (!c) continue;
                     const pos = this.boardToCanvas(x, y);
                     const fc = c === 'black' ? '#303030' : '#e2e2e2';
+                    this.ctx.fillStyle = fc;
                     if (x + 1 < size && board[x + 1][y] === c) {
                         const p2 = this.boardToCanvas(x + 1, y);
-                        this.ctx.fillStyle = fc;
-                        this.ctx.fillRect(pos.x, pos.y - this.stoneRadius,
-                            p2.x - pos.x, this.stoneRadius * 2);
+                        this._drawPuyoBridge(pos.x, pos.y, p2.x, p2.y, this.stoneRadius, false);
                     }
                     if (y + 1 < size && board[x][y + 1] === c) {
                         const p2 = this.boardToCanvas(x, y + 1);
-                        this.ctx.fillStyle = fc;
-                        this.ctx.fillRect(pos.x - this.stoneRadius, pos.y,
-                            this.stoneRadius * 2, p2.y - pos.y);
+                        this._drawPuyoBridge(pos.x, pos.y, p2.x, p2.y, this.stoneRadius, true);
                     }
                 }
             }
@@ -722,15 +715,26 @@ class BadukApp {
                 }
             }
 
-            // 3.3) 대각선 — 손잡기 (항상 연결)
+            // 3.3) 대각선 — 손잡기 (양쪽 끊김점 모두 적돌일 때만 끊기)
             for (let x = 0; x < size; x++) {
                 for (let y = 0; y < size; y++) {
                     const c = board[x][y];
                     if (!c) continue;
-                    if (x + 1 < size && y + 1 < size && board[x + 1][y + 1] === c)
-                        this._drawHandhold(x, y, x + 1, y + 1, c);
-                    if (x + 1 < size && y - 1 >= 0 && board[x + 1][y - 1] === c)
-                        this._drawHandhold(x, y, x + 1, y - 1, c);
+                    const enemy = opp(c);
+                    // 우하 대각
+                    if (x + 1 < size && y + 1 < size && board[x + 1][y + 1] === c) {
+                        const cut1 = board[x + 1][y];
+                        const cut2 = board[x][y + 1];
+                        if (!(cut1 === enemy && cut2 === enemy))
+                            this._drawHandhold(x, y, x + 1, y + 1, c);
+                    }
+                    // 우상 대각
+                    if (x + 1 < size && y - 1 >= 0 && board[x + 1][y - 1] === c) {
+                        const cut1 = board[x + 1][y];
+                        const cut2 = board[x][y - 1];
+                        if (!(cut1 === enemy && cut2 === enemy))
+                            this._drawHandhold(x, y, x + 1, y - 1, c);
+                    }
                 }
             }
 
@@ -888,6 +892,31 @@ class BadukApp {
         ctx.quadraticCurveTo(mx + sagX, my + sagY, x2, y2);
         ctx.stroke();
         ctx.restore();
+    }
+
+    // 뿌요뿌요 스타일 블롭 브릿지 (유기적 연결)
+    _drawPuyoBridge(p1x, p1y, p2x, p2y, r, isVertical) {
+        const ctx = this.ctx;
+        const squeeze = r * 0.4;
+
+        ctx.beginPath();
+        if (!isVertical) {
+            // 가로 연결 — 중간이 잘록한 블롭
+            const mx = (p1x + p2x) / 2;
+            ctx.moveTo(p1x, p1y - r);
+            ctx.quadraticCurveTo(mx, p1y - r + squeeze, p2x, p2y - r);
+            ctx.lineTo(p2x, p2y + r);
+            ctx.quadraticCurveTo(mx, p1y + r - squeeze, p1x, p1y + r);
+        } else {
+            // 세로 연결 — 중간이 잘록한 블롭
+            const my = (p1y + p2y) / 2;
+            ctx.moveTo(p1x - r, p1y);
+            ctx.quadraticCurveTo(p1x - r + squeeze, my, p2x - r, p2y);
+            ctx.lineTo(p2x + r, p2y);
+            ctx.quadraticCurveTo(p1x + r - squeeze, my, p1x + r, p1y);
+        }
+        ctx.closePath();
+        ctx.fill();
     }
 
     // 돌 본체만 (그림자 없이)
