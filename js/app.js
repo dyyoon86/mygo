@@ -723,6 +723,26 @@ class BadukApp {
                 }
             }
 
+            // 3.3) 대각선 같은색 돌 — 중간 굵기 실선
+            for (let x = 0; x < size; x++) {
+                for (let y = 0; y < size; y++) {
+                    const c = board[x][y];
+                    if (!c) continue;
+                    // 오른쪽 아래 대각선
+                    if (x + 1 < size && y + 1 < size && board[x + 1][y + 1] === c) {
+                        const p1 = this.boardToCanvas(x, y);
+                        const p2 = this.boardToCanvas(x + 1, y + 1);
+                        this._drawDiagonalLine(p1, p2, c);
+                    }
+                    // 오른쪽 위 대각선
+                    if (x + 1 < size && y - 1 >= 0 && board[x + 1][y - 1] === c) {
+                        const p1 = this.boardToCanvas(x, y);
+                        const p2 = this.boardToCanvas(x + 1, y - 1);
+                        this._drawDiagonalLine(p1, p2, c);
+                    }
+                }
+            }
+
             // 3.5) 한 칸 떨어진 같은색 돌 — 끈적한 연결선
             for (let x = 0; x < size; x++) {
                 for (let y = 0; y < size; y++) {
@@ -762,6 +782,47 @@ class BadukApp {
                 }
             }
         }
+    }
+
+    // 대각선 연결 — 중간 굵기 (합체와 끈적 사이)
+    _drawDiagonalLine(p1, p2, color) {
+        const ctx = this.ctx;
+        const r = this.stoneRadius;
+        const offset = r * 0.7; // 돌 테두리에서 시작
+
+        // 방향 계산
+        const dx = p2.x - p1.x;
+        const dy = p2.y - p1.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const nx = dx / dist;
+        const ny = dy / dist;
+
+        const sx = p1.x + nx * offset;
+        const sy = p1.y + ny * offset;
+        const ex = p2.x - nx * offset;
+        const ey = p2.y - ny * offset;
+
+        // 바깥 (두꺼운 반투명)
+        ctx.save();
+        ctx.strokeStyle = color === 'black' ? 'rgba(25,25,25,0.4)' : 'rgba(245,245,245,0.5)';
+        ctx.lineWidth = r * 0.45;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(ex, ey);
+        ctx.stroke();
+        ctx.restore();
+
+        // 코어 (가는 진한 선)
+        ctx.save();
+        ctx.strokeStyle = color === 'black' ? 'rgba(15,15,15,0.65)' : 'rgba(255,255,255,0.75)';
+        ctx.lineWidth = r * 0.18;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(ex, ey);
+        ctx.stroke();
+        ctx.restore();
     }
 
     // 끈적한 찰떡 느낌 연결선
