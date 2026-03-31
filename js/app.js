@@ -769,27 +769,49 @@ class BadukApp {
         const ctx = this.ctx;
         const r = this.stoneRadius;
 
-        // 돌 색에 맞춤: 검은돌=검은색, 흰돌=흰색
-        const baseColor = color === 'black' ? [30, 30, 30] : [240, 240, 240];
-
         const mx = (x1 + x2) / 2;
         const my = (y1 + y2) / 2;
-        // 약간 아래로 처지는 느낌 (중력)
-        const isHorizontal = Math.abs(x2 - x1) > Math.abs(y2 - y1);
-        const sagX = isHorizontal ? 0 : r * 0.15;
-        const sagY = isHorizontal ? r * 0.15 : 0;
+        const isHoriz = Math.abs(x2 - x1) > Math.abs(y2 - y1);
+        const sagX = isHoriz ? 0 : r * 0.2;
+        const sagY = isHoriz ? r * 0.2 : 0;
 
-        // 여러 겹으로 그려서 끈적+퍼지는 느낌
-        const layers = [
-            { width: r * 0.5, alpha: 0.08 },  // 넓은 번짐
-            { width: r * 0.32, alpha: 0.12 },  // 중간
-            { width: r * 0.18, alpha: 0.25 },  // 코어
-        ];
-
-        for (const layer of layers) {
+        // 돌 색 그대로: 검은돌=검정, 흰돌=흰색
+        if (color === 'black') {
+            // 바깥 번짐 (굵고 반투명)
             ctx.save();
-            ctx.strokeStyle = `rgba(${baseColor[0]},${baseColor[1]},${baseColor[2]},${layer.alpha})`;
-            ctx.lineWidth = layer.width;
+            ctx.strokeStyle = 'rgba(20,20,20,0.35)';
+            ctx.lineWidth = r * 0.7;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.quadraticCurveTo(mx + sagX, my + sagY, x2, y2);
+            ctx.stroke();
+            ctx.restore();
+            // 코어 (가늘고 진한)
+            ctx.save();
+            ctx.strokeStyle = 'rgba(10,10,10,0.7)';
+            ctx.lineWidth = r * 0.28;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.quadraticCurveTo(mx + sagX, my + sagY, x2, y2);
+            ctx.stroke();
+            ctx.restore();
+        } else {
+            // 바깥 번짐
+            ctx.save();
+            ctx.strokeStyle = 'rgba(255,255,255,0.45)';
+            ctx.lineWidth = r * 0.7;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.quadraticCurveTo(mx + sagX, my + sagY, x2, y2);
+            ctx.stroke();
+            ctx.restore();
+            // 코어
+            ctx.save();
+            ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+            ctx.lineWidth = r * 0.28;
             ctx.lineCap = 'round';
             ctx.beginPath();
             ctx.moveTo(x1, y1);
@@ -798,9 +820,9 @@ class BadukApp {
             ctx.restore();
         }
 
-        // 양쪽 끝 볼록한 방울 (찰떡이 늘어나는 시작점)
-        const blobR = r * 0.12;
-        ctx.fillStyle = `rgba(${baseColor[0]},${baseColor[1]},${baseColor[2]},0.3)`;
+        // 양쪽 끝 볼록 방울
+        const blobR = r * 0.2;
+        ctx.fillStyle = color === 'black' ? 'rgba(10,10,10,0.5)' : 'rgba(255,255,255,0.6)';
         ctx.beginPath();
         ctx.arc(x1, y1, blobR, 0, Math.PI * 2);
         ctx.fill();
