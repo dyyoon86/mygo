@@ -765,31 +765,17 @@ class BadukApp {
                 }
             }
 
-            // 3.3) 대각선 — 손잡기
-            // 같은 그룹 → 이미 블롭 합체 → 스킵
-            // 양쪽 끊김점 모두 적돌 → 끊기
+            // 3.3) 대각선 — 손잡기 (같은 그룹이면 스킵, 그 외 항상)
             for (let x = 0; x < size; x++) {
                 for (let y = 0; y < size; y++) {
                     const c = board[x][y];
                     if (!c) continue;
-                    const enemy = opp(c);
-                    // 우하 대각
                     if (x + 1 < size && y + 1 < size && board[x + 1][y + 1] === c
-                        && groupId[x][y] !== groupId[x + 1][y + 1]) {
-                        const cut1 = board[x + 1][y];
-                        const cut2 = board[x][y + 1];
-                        // 둘 다 빈칸 → 빵구 십자 방지, 둘 다 적돌 → 끊기
-                        if ((cut1 !== null || cut2 !== null) && !(cut1 === enemy && cut2 === enemy))
-                            this._drawHandhold(x, y, x + 1, y + 1, c);
-                    }
-                    // 우상 대각
+                        && groupId[x][y] !== groupId[x + 1][y + 1])
+                        this._drawHandhold(x, y, x + 1, y + 1, c);
                     if (x + 1 < size && y - 1 >= 0 && board[x + 1][y - 1] === c
-                        && groupId[x][y] !== groupId[x + 1][y - 1]) {
-                        const cut1 = board[x + 1][y];
-                        const cut2 = board[x][y - 1];
-                        if ((cut1 !== null || cut2 !== null) && !(cut1 === enemy && cut2 === enemy))
-                            this._drawHandhold(x, y, x + 1, y - 1, c);
-                    }
+                        && groupId[x][y] !== groupId[x + 1][y - 1])
+                        this._drawHandhold(x, y, x + 1, y - 1, c);
                 }
             }
 
