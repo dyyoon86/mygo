@@ -668,8 +668,8 @@ class BadukApp {
             // === ぷに碁 스타일 (PuyoGo 레퍼런스) ===
             const ctx = this.ctx;
             const r = this.stoneRadius;
-            const bw = Math.max(1.5, r * 0.08); // 테두리 두께
-            const mergeR = r * 0.75; // 합체 연결 원 반지름
+            const bw = Math.max(2, r * 0.12); // 테두리 두께 (뿌요고: 두꺼운 외곽선)
+            const mergeR = r * 0.8; // 합체 연결 원 반지름 (더 매끄러운 블롭)
 
             // 1) 그림자
             ctx.fillStyle = 'rgba(0,0,0,0.2)';
@@ -752,6 +752,20 @@ class BadukApp {
                 }
             }
 
+            // 2c) 젤리 하이라이트 (ぷに碁 광택감)
+            for (let x = 0; x < size; x++) {
+                for (let y = 0; y < size; y++) {
+                    const c = board[x][y];
+                    if (!c) continue;
+                    const pos = this.boardToCanvas(x, y);
+                    const hlAlpha = c === 'black' ? 0.10 : 0.35;
+                    ctx.fillStyle = `rgba(255,255,255,${hlAlpha})`;
+                    ctx.beginPath();
+                    ctx.ellipse(pos.x - r * 0.25, pos.y - r * 0.3, r * 0.35, r * 0.22, -Math.PI / 5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
             // 3) 대각선 — 손잡기 (같은 그룹이면 스킵)
             const groupId = Array.from({length: size}, () => new Array(size).fill(-1));
             let gid = 0;
@@ -797,26 +811,14 @@ class BadukApp {
                 }
             }
 
-            // 5) 표정 — 그룹당 하나 (중심점에)
-            const visited = new Set();
+            // 5) 표정 — 돌마다 하나 (ぷに碁 스타일)
             for (let x = 0; x < size; x++) {
                 for (let y = 0; y < size; y++) {
                     const c = board[x][y];
-                    if (!c || visited.has(`${x},${y}`)) continue;
-                    const group = this._getGroup(x, y);
-                    group.forEach(p => visited.add(`${p.x},${p.y}`));
-                    let cx = 0, cy = 0;
-                    group.forEach(p => { cx += p.x; cy += p.y; });
-                    cx = Math.round(cx / group.length);
-                    cy = Math.round(cy / group.length);
-                    let best = group[0], bestDist = Infinity;
-                    group.forEach(p => {
-                        const d = Math.abs(p.x - cx) + Math.abs(p.y - cy);
-                        if (d < bestDist) { bestDist = d; best = p; }
-                    });
-                    const state = this.getStoneState(best.x, best.y);
+                    if (!c) continue;
+                    const state = this.getStoneState(x, y);
                     if (state) {
-                        const pos = this.boardToCanvas(best.x, best.y);
+                        const pos = this.boardToCanvas(x, y);
                         this.drawFace(pos, c, state);
                     }
                 }
@@ -935,31 +937,6 @@ class BadukApp {
         ctx.quadraticCurveTo(mx + sagX, my + sagY, x2, y2);
         ctx.stroke();
         ctx.restore();
-    }
-
-    // 뿌요뿌요 스타일 블롭 브릿지 (유기적 연결)
-    _drawPuyoBridge(p1x, p1y, p2x, p2y, r, isVertical) {
-        const ctx = this.ctx;
-        const squeeze = r * 0.15;
-
-        ctx.beginPath();
-        if (!isVertical) {
-            // 가로 연결 — 중간이 잘록한 블롭
-            const mx = (p1x + p2x) / 2;
-            ctx.moveTo(p1x, p1y - r);
-            ctx.quadraticCurveTo(mx, p1y - r + squeeze, p2x, p2y - r);
-            ctx.lineTo(p2x, p2y + r);
-            ctx.quadraticCurveTo(mx, p1y + r - squeeze, p1x, p1y + r);
-        } else {
-            // 세로 연결 — 중간이 잘록한 블롭
-            const my = (p1y + p2y) / 2;
-            ctx.moveTo(p1x - r, p1y);
-            ctx.quadraticCurveTo(p1x - r + squeeze, my, p2x - r, p2y);
-            ctx.lineTo(p2x + r, p2y);
-            ctx.quadraticCurveTo(p1x + r - squeeze, my, p1x + r, p1y);
-        }
-        ctx.closePath();
-        ctx.fill();
     }
 
     // 돌 본체만 (그림자 없이)
@@ -1099,15 +1076,18 @@ class BadukApp {
         ctx.beginPath();
         ctx.ellipse(s * 2, s * 0.6, s * 0.7, s * 0.45, 0, 0, Math.PI * 2);
         ctx.fill();
-        // 입 (큰 미소)
+        // 입 (ω 미소) — PuyoGo 스타일
         ctx.strokeStyle = fc;
         ctx.lineWidth = Math.max(1.5, r * 0.09);
+        ctx.lineCap = 'round';
         ctx.beginPath();
-        ctx.arc(0, s * 0.3, s * 1.1, Math.PI * 0.15, Math.PI * 0.85);
+        ctx.moveTo(-s * 1.2, s * 0.5);
+        ctx.quadraticCurveTo(-s * 0.6, s * 1.5, 0, s * 0.5);
+        ctx.quadraticCurveTo(s * 0.6, s * 1.5, s * 1.2, s * 0.5);
         ctx.stroke();
     }
 
-    // 😐 평온 (활로 2~3)
+    // 😐 평온 — ω 입 (ぷに碁 시그니처)
     _drawCalmFace(ctx, r, fc) {
         const s = r * 0.22;
         // 눈 (· ·) 점
@@ -1118,13 +1098,14 @@ class BadukApp {
         ctx.beginPath();
         ctx.arc(s * 1.2, -s * 0.2, s * 0.4, 0, Math.PI * 2);
         ctx.fill();
-        // 입 (일자)
+        // 입 (ω) — PuyoGo 시그니처
         ctx.strokeStyle = fc;
         ctx.lineWidth = Math.max(1.5, r * 0.08);
         ctx.lineCap = 'round';
         ctx.beginPath();
-        ctx.moveTo(-s * 0.8, s * 0.9);
-        ctx.lineTo(s * 0.8, s * 0.9);
+        ctx.moveTo(-s * 1, s * 0.7);
+        ctx.quadraticCurveTo(-s * 0.5, s * 1.4, 0, s * 0.7);
+        ctx.quadraticCurveTo(s * 0.5, s * 1.4, s * 1, s * 0.7);
         ctx.stroke();
     }
 
