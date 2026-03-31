@@ -778,7 +778,8 @@ class BadukApp {
                         && groupId[x][y] !== groupId[x + 1][y + 1]) {
                         const cut1 = board[x + 1][y];
                         const cut2 = board[x][y + 1];
-                        if (!(cut1 === enemy && cut2 === enemy))
+                        // 둘 다 빈칸 → 빵구 십자 방지, 둘 다 적돌 → 끊기
+                        if ((cut1 !== null || cut2 !== null) && !(cut1 === enemy && cut2 === enemy))
                             this._drawHandhold(x, y, x + 1, y + 1, c);
                     }
                     // 우상 대각
@@ -786,7 +787,7 @@ class BadukApp {
                         && groupId[x][y] !== groupId[x + 1][y - 1]) {
                         const cut1 = board[x + 1][y];
                         const cut2 = board[x][y - 1];
-                        if (!(cut1 === enemy && cut2 === enemy))
+                        if ((cut1 !== null || cut2 !== null) && !(cut1 === enemy && cut2 === enemy))
                             this._drawHandhold(x, y, x + 1, y - 1, c);
                     }
                 }
