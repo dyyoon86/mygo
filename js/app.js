@@ -792,15 +792,17 @@ class BadukApp {
                 }
             }
 
-            // 3.5) 날일자 (한 칸 떨어짐) — 사이에 돌 있으면 안 그림
+            // 3.5) 날일자 (한 칸 떨어짐) — 같은 그룹이면 스킵 (빵구 십자 방지)
             for (let x = 0; x < size; x++) {
                 for (let y = 0; y < size; y++) {
                     const c = board[x][y];
                     if (!c) continue;
-                    if (x + 2 < size && board[x + 1][y] === null && board[x + 2][y] === c) {
+                    if (x + 2 < size && board[x + 1][y] === null && board[x + 2][y] === c
+                        && groupId[x][y] !== groupId[x + 2][y]) {
                         this._drawStickyLine(x, y, x + 2, y, c);
                     }
-                    if (y + 2 < size && board[x][y + 1] === null && board[x][y + 2] === c) {
+                    if (y + 2 < size && board[x][y + 1] === null && board[x][y + 2] === c
+                        && groupId[x][y] !== groupId[x][y + 2]) {
                         this._drawStickyLine(x, y, x, y + 2, c);
                     }
                 }
