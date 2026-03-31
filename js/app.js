@@ -665,15 +665,15 @@ class BadukApp {
         const face = this.settings.faceEnabled;
 
         if (face) {
-            // === 표정 모드: 그룹 합체 렌더링 ===
+            // === 표정 모드 ===
+            const opp = (c) => c === 'black' ? 'white' : 'black';
 
-            // 1) 그림자 전체 (브릿지 + 돌)
+            // 1) 그림자 (브릿지 + 돌)
             for (let x = 0; x < size; x++) {
                 for (let y = 0; y < size; y++) {
                     const c = board[x][y];
                     if (!c) continue;
                     const pos = this.boardToCanvas(x, y);
-                    // 브릿지 그림자
                     if (x + 1 < size && board[x + 1][y] === c) {
                         const p2 = this.boardToCanvas(x + 1, y);
                         this.ctx.fillStyle = 'rgba(0,0,0,0.3)';
@@ -686,7 +686,6 @@ class BadukApp {
                         this.ctx.fillRect(pos.x - this.stoneRadius + 2, pos.y + 2,
                             this.stoneRadius * 2, p2.y - pos.y);
                     }
-                    // 돌 그림자
                     this.ctx.beginPath();
                     this.ctx.arc(pos.x + 2, pos.y + 2, this.stoneRadius, 0, Math.PI * 2);
                     this.ctx.fillStyle = 'rgba(0,0,0,0.3)';
@@ -694,88 +693,99 @@ class BadukApp {
                 }
             }
 
-            // 2) 브릿지 본체 (돌 크기와 동일한 두께)
+            // 2) 브릿지 본체
             for (let x = 0; x < size; x++) {
                 for (let y = 0; y < size; y++) {
                     const c = board[x][y];
                     if (!c) continue;
                     const pos = this.boardToCanvas(x, y);
-                    const fillColor = c === 'black' ? '#303030' : '#e2e2e2';
+                    const fc = c === 'black' ? '#303030' : '#e2e2e2';
                     if (x + 1 < size && board[x + 1][y] === c) {
                         const p2 = this.boardToCanvas(x + 1, y);
-                        this.ctx.fillStyle = fillColor;
+                        this.ctx.fillStyle = fc;
                         this.ctx.fillRect(pos.x, pos.y - this.stoneRadius,
                             p2.x - pos.x, this.stoneRadius * 2);
                     }
                     if (y + 1 < size && board[x][y + 1] === c) {
                         const p2 = this.boardToCanvas(x, y + 1);
-                        this.ctx.fillStyle = fillColor;
+                        this.ctx.fillStyle = fc;
                         this.ctx.fillRect(pos.x - this.stoneRadius, pos.y,
                             this.stoneRadius * 2, p2.y - pos.y);
                     }
                 }
             }
 
-            // 3) 돌 본체 (그라디언트 원 — 브릿지 위에)
+            // 3) 돌 본체
             for (let x = 0; x < size; x++) {
                 for (let y = 0; y < size; y++) {
                     if (board[x][y]) this._drawStoneBody(x, y, board[x][y]);
                 }
             }
 
-            // 3.3) 대각선 같은색 돌 — 중간 굵기 실선
+            // 3.3) 대각선 — 손잡기 (적돌이 끼면 안 그림)
             for (let x = 0; x < size; x++) {
                 for (let y = 0; y < size; y++) {
                     const c = board[x][y];
                     if (!c) continue;
-                    // 오른쪽 아래 대각선
+                    const enemy = opp(c);
+                    // 오른쪽아래
                     if (x + 1 < size && y + 1 < size && board[x + 1][y + 1] === c) {
-                        const p1 = this.boardToCanvas(x, y);
-                        const p2 = this.boardToCanvas(x + 1, y + 1);
-                        this._drawDiagonalLine(p1, p2, c);
+                        const cut1 = board[x + 1][y], cut2 = board[x][y + 1];
+                        if (cut1 !== enemy && cut2 !== enemy) {
+                            this._drawHandhold(x, y, x + 1, y + 1, c);
+                        }
                     }
-                    // 오른쪽 위 대각선
+                    // 오른쪽위
                     if (x + 1 < size && y - 1 >= 0 && board[x + 1][y - 1] === c) {
-                        const p1 = this.boardToCanvas(x, y);
-                        const p2 = this.boardToCanvas(x + 1, y - 1);
-                        this._drawDiagonalLine(p1, p2, c);
+                        const cut1 = board[x + 1][y], cut2 = board[x][y - 1];
+                        if (cut1 !== enemy && cut2 !== enemy) {
+                            this._drawHandhold(x, y, x + 1, y - 1, c);
+                        }
                     }
                 }
             }
 
-            // 3.5) 한 칸 떨어진 같은색 돌 — 끈적한 연결선
+            // 3.5) 날일자 (한 칸 떨어짐) — 사이에 돌 있으면 안 그림
             for (let x = 0; x < size; x++) {
                 for (let y = 0; y < size; y++) {
                     const c = board[x][y];
                     if (!c) continue;
                     if (x + 2 < size && board[x + 1][y] === null && board[x + 2][y] === c) {
-                        const p1 = this.boardToCanvas(x, y);
-                        const p2 = this.boardToCanvas(x + 2, y);
-                        this._drawStickyLine(p1.x + this.stoneRadius, p1.y,
-                            p2.x - this.stoneRadius, p2.y, c);
+                        this._drawStickyLine(x, y, x + 2, y, c);
                     }
                     if (y + 2 < size && board[x][y + 1] === null && board[x][y + 2] === c) {
-                        const p1 = this.boardToCanvas(x, y);
-                        const p2 = this.boardToCanvas(x, y + 2);
-                        this._drawStickyLine(p1.x, p1.y + this.stoneRadius,
-                            p2.x, p2.y - this.stoneRadius, c);
+                        this._drawStickyLine(x, y, x, y + 2, c);
                     }
                 }
             }
 
-            // 4) 표정
+            // 4) 표정 — 그룹당 하나만 (중심점에)
+            const visited = new Set();
             for (let x = 0; x < size; x++) {
                 for (let y = 0; y < size; y++) {
-                    if (!board[x][y]) continue;
-                    const state = this.getStoneState(x, y);
+                    const c = board[x][y];
+                    if (!c || visited.has(`${x},${y}`)) continue;
+                    const group = this._getGroup(x, y);
+                    group.forEach(p => visited.add(`${p.x},${p.y}`));
+                    // 그룹 중심 계산
+                    let cx = 0, cy = 0;
+                    group.forEach(p => { cx += p.x; cy += p.y; });
+                    cx = Math.round(cx / group.length);
+                    cy = Math.round(cy / group.length);
+                    // 중심에 가장 가까운 실제 돌 찾기
+                    let best = group[0], bestDist = Infinity;
+                    group.forEach(p => {
+                        const d = Math.abs(p.x - cx) + Math.abs(p.y - cy);
+                        if (d < bestDist) { bestDist = d; best = p; }
+                    });
+                    const state = this.getStoneState(best.x, best.y);
                     if (state) {
-                        const pos = this.boardToCanvas(x, y);
-                        this.drawFace(pos, board[x][y], state);
+                        const pos = this.boardToCanvas(best.x, best.y);
+                        this.drawFace(pos, c, state);
                     }
                 }
             }
         } else {
-            // === 기본 모드: 원래 렌더링 ===
             for (let x = 0; x < size; x++) {
                 for (let y = 0; y < size; y++) {
                     if (board[x][y]) this.drawStone(x, y, board[x][y]);
@@ -784,112 +794,111 @@ class BadukApp {
         }
     }
 
-    // 대각선 연결 — 중간 굵기 (합체와 끈적 사이)
-    _drawDiagonalLine(p1, p2, color) {
-        const ctx = this.ctx;
-        const r = this.stoneRadius;
-        const offset = r * 0.7; // 돌 테두리에서 시작
-
-        // 방향 계산
-        const dx = p2.x - p1.x;
-        const dy = p2.y - p1.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        const nx = dx / dist;
-        const ny = dy / dist;
-
-        const sx = p1.x + nx * offset;
-        const sy = p1.y + ny * offset;
-        const ex = p2.x - nx * offset;
-        const ey = p2.y - ny * offset;
-
-        // 바깥 (두꺼운 반투명)
-        ctx.save();
-        ctx.strokeStyle = color === 'black' ? 'rgba(25,25,25,0.4)' : 'rgba(245,245,245,0.5)';
-        ctx.lineWidth = r * 0.45;
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.moveTo(sx, sy);
-        ctx.lineTo(ex, ey);
-        ctx.stroke();
-        ctx.restore();
-
-        // 코어 (가는 진한 선)
-        ctx.save();
-        ctx.strokeStyle = color === 'black' ? 'rgba(15,15,15,0.65)' : 'rgba(255,255,255,0.75)';
-        ctx.lineWidth = r * 0.18;
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.moveTo(sx, sy);
-        ctx.lineTo(ex, ey);
-        ctx.stroke();
-        ctx.restore();
+    // 그룹 찾기 (BFS)
+    _getGroup(sx, sy) {
+        const color = this.game.board[sx][sy];
+        const group = [];
+        const visited = new Set();
+        const stack = [{x: sx, y: sy}];
+        while (stack.length) {
+            const {x, y} = stack.pop();
+            const k = `${x},${y}`;
+            if (visited.has(k)) continue;
+            visited.add(k);
+            if (this.game.board[x][y] === color) {
+                group.push({x, y});
+                for (const [nx, ny] of this.game.getNeighbors(x, y)) {
+                    if (!visited.has(`${nx},${ny}`)) stack.push({x: nx, y: ny});
+                }
+            }
+        }
+        return group;
     }
 
-    // 끈적한 찰떡 느낌 연결선
-    _drawStickyLine(x1, y1, x2, y2, color) {
+    // 대각선 — 손잡기 느낌 (작은 손 + 연결 팔)
+    _drawHandhold(x1, y1, x2, y2, color) {
         const ctx = this.ctx;
         const r = this.stoneRadius;
+        const p1 = this.boardToCanvas(x1, y1);
+        const p2 = this.boardToCanvas(x2, y2);
 
-        const mx = (x1 + x2) / 2;
-        const my = (y1 + y2) / 2;
-        const isHoriz = Math.abs(x2 - x1) > Math.abs(y2 - y1);
-        const sagX = isHoriz ? 0 : r * 0.2;
-        const sagY = isHoriz ? r * 0.2 : 0;
+        const dx = p2.x - p1.x, dy = p2.y - p1.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const nx = dx / dist, ny = dy / dist;
 
-        // 돌 색 그대로: 검은돌=검정, 흰돌=흰색
-        if (color === 'black') {
-            // 바깥 번짐 (굵고 반투명)
-            ctx.save();
-            ctx.strokeStyle = 'rgba(20,20,20,0.35)';
-            ctx.lineWidth = r * 0.7;
-            ctx.lineCap = 'round';
-            ctx.beginPath();
-            ctx.moveTo(x1, y1);
-            ctx.quadraticCurveTo(mx + sagX, my + sagY, x2, y2);
-            ctx.stroke();
-            ctx.restore();
-            // 코어 (가늘고 진한)
-            ctx.save();
-            ctx.strokeStyle = 'rgba(10,10,10,0.7)';
-            ctx.lineWidth = r * 0.28;
-            ctx.lineCap = 'round';
-            ctx.beginPath();
-            ctx.moveTo(x1, y1);
-            ctx.quadraticCurveTo(mx + sagX, my + sagY, x2, y2);
-            ctx.stroke();
-            ctx.restore();
-        } else {
-            // 바깥 번짐
-            ctx.save();
-            ctx.strokeStyle = 'rgba(255,255,255,0.45)';
-            ctx.lineWidth = r * 0.7;
-            ctx.lineCap = 'round';
-            ctx.beginPath();
-            ctx.moveTo(x1, y1);
-            ctx.quadraticCurveTo(mx + sagX, my + sagY, x2, y2);
-            ctx.stroke();
-            ctx.restore();
-            // 코어
-            ctx.save();
-            ctx.strokeStyle = 'rgba(255,255,255,0.85)';
-            ctx.lineWidth = r * 0.28;
-            ctx.lineCap = 'round';
-            ctx.beginPath();
-            ctx.moveTo(x1, y1);
-            ctx.quadraticCurveTo(mx + sagX, my + sagY, x2, y2);
-            ctx.stroke();
-            ctx.restore();
-        }
+        // 돌 가장자리에서 시작
+        const sx = p1.x + nx * r * 0.85, sy = p1.y + ny * r * 0.85;
+        const ex = p2.x - nx * r * 0.85, ey = p2.y - ny * r * 0.85;
+        const mx = (sx + ex) / 2, my = (sy + ey) / 2;
 
-        // 양쪽 끝 볼록 방울
-        const blobR = r * 0.2;
-        ctx.fillStyle = color === 'black' ? 'rgba(10,10,10,0.5)' : 'rgba(255,255,255,0.6)';
+        const isBlack = color === 'black';
+
+        // 팔 (살짝 곡선)
+        ctx.save();
+        ctx.strokeStyle = isBlack ? 'rgba(30,30,30,0.5)' : 'rgba(220,220,220,0.65)';
+        ctx.lineWidth = r * 0.2;
+        ctx.lineCap = 'round';
         ctx.beginPath();
-        ctx.arc(x1, y1, blobR, 0, Math.PI * 2);
+        ctx.moveTo(sx, sy);
+        ctx.quadraticCurveTo(mx - ny * r * 0.15, my + nx * r * 0.15, ex, ey);
+        ctx.stroke();
+        ctx.restore();
+
+        // 손 (양쪽 끝에 동글이)
+        const handR = r * 0.22;
+        ctx.fillStyle = isBlack ? 'rgba(50,50,50,0.7)' : 'rgba(240,240,240,0.8)';
+        ctx.beginPath();
+        ctx.arc(sx, sy, handR, 0, Math.PI * 2);
         ctx.fill();
         ctx.beginPath();
-        ctx.arc(x2, y2, blobR, 0, Math.PI * 2);
+        ctx.arc(ex, ey, handR, 0, Math.PI * 2);
         ctx.fill();
+
+        // 잡은 부분 (중간에 하트/볼록)
+        ctx.fillStyle = isBlack ? 'rgba(50,50,50,0.55)' : 'rgba(235,235,235,0.7)';
+        ctx.beginPath();
+        ctx.arc(mx, my, handR * 0.7, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // 끈적 연결선 (날일자 — 한 칸 떨어진 돌)
+    _drawStickyLine(bx1, by1, bx2, by2, color) {
+        const ctx = this.ctx;
+        const r = this.stoneRadius;
+        const p1 = this.boardToCanvas(bx1, by1);
+        const p2 = this.boardToCanvas(bx2, by2);
+        const isHoriz = bx1 !== bx2;
+
+        const x1 = isHoriz ? p1.x + r : p1.x;
+        const y1 = isHoriz ? p1.y : p1.y + r;
+        const x2 = isHoriz ? p2.x - r : p2.x;
+        const y2 = isHoriz ? p2.y : p2.y - r;
+        const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+        const sagX = isHoriz ? 0 : r * 0.18;
+        const sagY = isHoriz ? r * 0.18 : 0;
+
+        const isBlack = color === 'black';
+
+        // 바깥 번짐
+        ctx.save();
+        ctx.strokeStyle = isBlack ? 'rgba(20,20,20,0.35)' : 'rgba(255,255,255,0.45)';
+        ctx.lineWidth = r * 0.55;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.quadraticCurveTo(mx + sagX, my + sagY, x2, y2);
+        ctx.stroke();
+        ctx.restore();
+        // 코어
+        ctx.save();
+        ctx.strokeStyle = isBlack ? 'rgba(10,10,10,0.65)' : 'rgba(255,255,255,0.8)';
+        ctx.lineWidth = r * 0.2;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.quadraticCurveTo(mx + sagX, my + sagY, x2, y2);
+        ctx.stroke();
+        ctx.restore();
     }
 
     // 돌 본체만 (그림자 없이)
