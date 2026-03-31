@@ -1019,7 +1019,7 @@ class BadukApp {
         ctx.fill();
     }
 
-    // 돌 상태 분석: 활로 수 기반 표정 결정
+    // 돌 상태 분석: 활로 수 + 적돌 인접 기반 표정 결정
     getStoneState(x, y) {
         const stone = this.game.board[x][y];
         if (!stone) return null;
@@ -1032,6 +1032,12 @@ class BadukApp {
 
         if (liberties === 1) return 'panic';       // 단수! 위험
         if (liberties === 2) return 'worried';      // 불안
+
+        // 적돌 인접 체크 (ぷに碁: 마주보면 긴장)
+        const enemy = stone === 'black' ? 'white' : 'black';
+        const hasEnemy = this.game.getNeighbors(x, y).some(([nx, ny]) => this.game.board[nx][ny] === enemy);
+        if (hasEnemy) return 'tense';               // 적과 마주봄
+
         if (liberties >= 4 || groupSize >= 5) return 'happy'; // 안전+대그룹
         return 'calm';                              // 보통
     }
@@ -1058,6 +1064,9 @@ class BadukApp {
                 break;
             case 'panic':
                 this._drawPanicFace(ctx, r, faceColor, blushColor);
+                break;
+            case 'tense':
+                this._drawTenseFace(ctx, r, faceColor);
                 break;
             case 'confident':
                 this._drawConfidentFace(ctx, r, faceColor);
@@ -1202,6 +1211,33 @@ class BadukApp {
         ctx.lineWidth = Math.max(1.5, r * 0.09);
         ctx.beginPath();
         ctx.arc(0, s * 0.2, s * 1, Math.PI * 0.1, Math.PI * 0.6);
+        ctx.stroke();
+    }
+
+    // 😤 긴장 (적돌과 마주봄 — ぷに碁 스타일)
+    _drawTenseFace(ctx, r, fc) {
+        const s = r * 0.22;
+        // 눈 (> <) 찡그린 눈
+        ctx.strokeStyle = fc;
+        ctx.lineWidth = Math.max(1.5, r * 0.1);
+        ctx.lineCap = 'round';
+        // 왼쪽 눈 >
+        ctx.beginPath();
+        ctx.moveTo(-s * 1.8, -s * 0.8);
+        ctx.lineTo(-s * 1, -s * 0.2);
+        ctx.lineTo(-s * 1.8, s * 0.3);
+        ctx.stroke();
+        // 오른쪽 눈 <
+        ctx.beginPath();
+        ctx.moveTo(s * 1.8, -s * 0.8);
+        ctx.lineTo(s * 1, -s * 0.2);
+        ctx.lineTo(s * 1.8, s * 0.3);
+        ctx.stroke();
+        // 입 (꾹 다문 입)
+        ctx.lineWidth = Math.max(1.5, r * 0.09);
+        ctx.beginPath();
+        ctx.moveTo(-s * 0.6, s * 1);
+        ctx.quadraticCurveTo(0, s * 0.7, s * 0.6, s * 1);
         ctx.stroke();
     }
 
