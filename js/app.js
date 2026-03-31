@@ -665,164 +665,101 @@ class BadukApp {
         const face = this.settings.faceEnabled;
 
         if (face) {
-            // === 표정 모드 ===
-            const opp = (c) => c === 'black' ? 'white' : 'black';
+            // === ぷに碁 스타일 (PuyoGo 레퍼런스) ===
+            const ctx = this.ctx;
+            const r = this.stoneRadius;
+            const bw = Math.max(1.5, r * 0.08); // 테두리 두께
+            const mergeR = r * 0.75; // 합체 연결 원 반지름
 
-            // 0) 그룹 ID 사전 계산 (대각선 판정용)
-            const groupId = Array.from({length: size}, () => new Array(size).fill(-1));
-            let gid = 0;
-            for (let x = 0; x < size; x++) {
-                for (let y = 0; y < size; y++) {
-                    if (board[x][y] && groupId[x][y] === -1) {
-                        const group = this._getGroup(x, y);
-                        group.forEach(p => { groupId[p.x][p.y] = gid; });
-                        gid++;
-                    }
-                }
-            }
-
-            // 1) 그림자 (뿌요뿌요 블롭 + 돌)
+            // 1) 그림자
+            ctx.fillStyle = 'rgba(0,0,0,0.2)';
             for (let x = 0; x < size; x++) {
                 for (let y = 0; y < size; y++) {
                     const c = board[x][y];
                     if (!c) continue;
                     const pos = this.boardToCanvas(x, y);
-                    this.ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                    // 연결부 그림자
                     if (x + 1 < size && board[x + 1][y] === c) {
                         const p2 = this.boardToCanvas(x + 1, y);
-                        this._drawPuyoBridge(pos.x + 2, pos.y + 2, p2.x + 2, p2.y + 2, this.stoneRadius, false);
+                        ctx.beginPath();
+                        ctx.arc((pos.x + p2.x) / 2 + 2, pos.y + 2, mergeR, 0, Math.PI * 2);
+                        ctx.fill();
                     }
                     if (y + 1 < size && board[x][y + 1] === c) {
                         const p2 = this.boardToCanvas(x, y + 1);
-                        this._drawPuyoBridge(pos.x + 2, pos.y + 2, p2.x + 2, p2.y + 2, this.stoneRadius, true);
+                        ctx.beginPath();
+                        ctx.arc(pos.x + 2, (pos.y + p2.y) / 2 + 2, mergeR, 0, Math.PI * 2);
+                        ctx.fill();
                     }
-                    this.ctx.beginPath();
-                    this.ctx.arc(pos.x + 2, pos.y + 2, this.stoneRadius, 0, Math.PI * 2);
-                    this.ctx.fill();
+                    // 돌 그림자
+                    ctx.beginPath();
+                    ctx.arc(pos.x + 2, pos.y + 2, r, 0, Math.PI * 2);
+                    ctx.fill();
                 }
             }
 
-            // 2) 뿌요뿌요 블롭 본체
-            for (let x = 0; x < size; x++) {
-                for (let y = 0; y < size; y++) {
-                    const c = board[x][y];
-                    if (!c) continue;
-                    const pos = this.boardToCanvas(x, y);
-                    const fc = c === 'black' ? '#303030' : '#e2e2e2';
-                    this.ctx.fillStyle = fc;
-                    if (x + 1 < size && board[x + 1][y] === c) {
-                        const p2 = this.boardToCanvas(x + 1, y);
-                        this._drawPuyoBridge(pos.x, pos.y, p2.x, p2.y, this.stoneRadius, false);
-                    }
-                    if (y + 1 < size && board[x][y + 1] === c) {
-                        const p2 = this.boardToCanvas(x, y + 1);
-                        this._drawPuyoBridge(pos.x, pos.y, p2.x, p2.y, this.stoneRadius, true);
-                    }
-                }
-            }
+            // 2) 테두리 + 채우기 (색상별 — 더블서클 기법)
+            for (const color of ['white', 'black']) {
+                const outColor = color === 'black' ? '#222' : '#aaa';
+                const fillColor = color === 'black' ? '#4a4a4a' : '#f0f0f0';
 
-            // 3) 돌 본체 (뿌요뿌요: 그룹 돌은 평면색으로 블롭 합체)
-            for (let x = 0; x < size; x++) {
-                for (let y = 0; y < size; y++) {
-                    const c = board[x][y];
-                    if (!c) continue;
-                    const grouped = this.game.getNeighbors(x, y).some(([nx, ny]) => board[nx][ny] === c);
-                    if (grouped) {
+                // 2a) 테두리 레이어 (큰 원)
+                ctx.fillStyle = outColor;
+                for (let x = 0; x < size; x++) {
+                    for (let y = 0; y < size; y++) {
+                        if (board[x][y] !== color) continue;
                         const pos = this.boardToCanvas(x, y);
-                        this.ctx.fillStyle = c === 'black' ? '#303030' : '#e2e2e2';
-                        this.ctx.beginPath();
-                        this.ctx.arc(pos.x, pos.y, this.stoneRadius, 0, Math.PI * 2);
-                        this.ctx.fill();
-                    } else {
-                        this._drawStoneBody(x, y, c);
+                        if (x + 1 < size && board[x + 1][y] === color) {
+                            const p2 = this.boardToCanvas(x + 1, y);
+                            ctx.beginPath();
+                            ctx.arc((pos.x + p2.x) / 2, pos.y, mergeR, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                        if (y + 1 < size && board[x][y + 1] === color) {
+                            const p2 = this.boardToCanvas(x, y + 1);
+                            ctx.beginPath();
+                            ctx.arc(pos.x, (pos.y + p2.y) / 2, mergeR, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                        ctx.beginPath();
+                        ctx.arc(pos.x, pos.y, r, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+
+                // 2b) 채우기 레이어 (작은 원 — 테두리 위에 덮어서 외곽선만 남김)
+                ctx.fillStyle = fillColor;
+                for (let x = 0; x < size; x++) {
+                    for (let y = 0; y < size; y++) {
+                        if (board[x][y] !== color) continue;
+                        const pos = this.boardToCanvas(x, y);
+                        if (x + 1 < size && board[x + 1][y] === color) {
+                            const p2 = this.boardToCanvas(x + 1, y);
+                            ctx.beginPath();
+                            ctx.arc((pos.x + p2.x) / 2, pos.y, mergeR - bw, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                        if (y + 1 < size && board[x][y + 1] === color) {
+                            const p2 = this.boardToCanvas(x, y + 1);
+                            ctx.beginPath();
+                            ctx.arc(pos.x, (pos.y + p2.y) / 2, mergeR - bw, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                        ctx.beginPath();
+                        ctx.arc(pos.x, pos.y, r - bw, 0, Math.PI * 2);
+                        ctx.fill();
                     }
                 }
             }
 
-            // 3.1) 뿌요뿌요 젤리 하이라이트 (광택)
+            // 3) 표정 — 모든 돌에 (ぷに碁: 돌마다 얼굴)
             for (let x = 0; x < size; x++) {
                 for (let y = 0; y < size; y++) {
                     const c = board[x][y];
                     if (!c) continue;
-                    if (!this.game.getNeighbors(x, y).some(([nx, ny]) => board[nx][ny] === c)) continue;
-                    const pos = this.boardToCanvas(x, y);
-                    const r = this.stoneRadius;
-                    const hl = this.ctx.createRadialGradient(
-                        pos.x - r * 0.3, pos.y - r * 0.3, r * 0.05,
-                        pos.x, pos.y, r * 0.75
-                    );
-                    if (c === 'black') {
-                        hl.addColorStop(0, 'rgba(140,140,140,0.35)');
-                        hl.addColorStop(1, 'rgba(0,0,0,0)');
-                    } else {
-                        hl.addColorStop(0, 'rgba(255,255,255,0.5)');
-                        hl.addColorStop(1, 'rgba(0,0,0,0)');
-                    }
-                    this.ctx.fillStyle = hl;
-                    this.ctx.beginPath();
-                    this.ctx.arc(pos.x, pos.y, r, 0, Math.PI * 2);
-                    this.ctx.fill();
-                }
-            }
-
-            // 3.3) 대각선 — 손잡기 (같은 그룹이면 스킵, 그 외 항상)
-            for (let x = 0; x < size; x++) {
-                for (let y = 0; y < size; y++) {
-                    const c = board[x][y];
-                    if (!c) continue;
-                    if (x + 1 < size && y + 1 < size && board[x + 1][y + 1] === c
-                        && groupId[x][y] !== groupId[x + 1][y + 1])
-                        this._drawHandhold(x, y, x + 1, y + 1, c);
-                    if (x + 1 < size && y - 1 >= 0 && board[x + 1][y - 1] === c
-                        && groupId[x][y] !== groupId[x + 1][y - 1])
-                        this._drawHandhold(x, y, x + 1, y - 1, c);
-                }
-            }
-
-            // 3.5) 날일자 (한 칸 떨어짐) — 같은 그룹이면 스킵 (빵구 십자 방지)
-            for (let x = 0; x < size; x++) {
-                for (let y = 0; y < size; y++) {
-                    const c = board[x][y];
-                    if (!c) continue;
-                    // 가로 한 칸 — 대각선 연결석 있으면 스킵
-                    if (x + 2 < size && board[x + 1][y] === null && board[x + 2][y] === c
-                        && groupId[x][y] !== groupId[x + 2][y]) {
-                        const diag = (y > 0 && board[x + 1][y - 1] === c)
-                                  || (y + 1 < size && board[x + 1][y + 1] === c);
-                        if (!diag) this._drawStickyLine(x, y, x + 2, y, c);
-                    }
-                    // 세로 한 칸 — 대각선 연결석 있으면 스킵
-                    if (y + 2 < size && board[x][y + 1] === null && board[x][y + 2] === c
-                        && groupId[x][y] !== groupId[x][y + 2]) {
-                        const diag = (x > 0 && board[x - 1][y + 1] === c)
-                                  || (x + 1 < size && board[x + 1][y + 1] === c);
-                        if (!diag) this._drawStickyLine(x, y, x, y + 2, c);
-                    }
-                }
-            }
-
-            // 4) 표정 — 그룹당 하나만 (중심점에)
-            const visited = new Set();
-            for (let x = 0; x < size; x++) {
-                for (let y = 0; y < size; y++) {
-                    const c = board[x][y];
-                    if (!c || visited.has(`${x},${y}`)) continue;
-                    const group = this._getGroup(x, y);
-                    group.forEach(p => visited.add(`${p.x},${p.y}`));
-                    // 그룹 중심 계산
-                    let cx = 0, cy = 0;
-                    group.forEach(p => { cx += p.x; cy += p.y; });
-                    cx = Math.round(cx / group.length);
-                    cy = Math.round(cy / group.length);
-                    // 중심에 가장 가까운 실제 돌 찾기
-                    let best = group[0], bestDist = Infinity;
-                    group.forEach(p => {
-                        const d = Math.abs(p.x - cx) + Math.abs(p.y - cy);
-                        if (d < bestDist) { bestDist = d; best = p; }
-                    });
-                    const state = this.getStoneState(best.x, best.y);
+                    const state = this.getStoneState(x, y);
                     if (state) {
-                        const pos = this.boardToCanvas(best.x, best.y);
+                        const pos = this.boardToCanvas(x, y);
                         this.drawFace(pos, c, state);
                     }
                 }
