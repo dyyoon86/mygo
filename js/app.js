@@ -752,7 +752,32 @@ class BadukApp {
                 }
             }
 
-            // 3) 표정 — 모든 돌에 (ぷに碁: 돌마다 얼굴)
+            // 3) 대각선 — 손잡기 (같은 그룹이면 스킵)
+            const groupId = Array.from({length: size}, () => new Array(size).fill(-1));
+            let gid = 0;
+            for (let x = 0; x < size; x++) {
+                for (let y = 0; y < size; y++) {
+                    if (board[x][y] && groupId[x][y] === -1) {
+                        const group = this._getGroup(x, y);
+                        group.forEach(p => { groupId[p.x][p.y] = gid; });
+                        gid++;
+                    }
+                }
+            }
+            for (let x = 0; x < size; x++) {
+                for (let y = 0; y < size; y++) {
+                    const c = board[x][y];
+                    if (!c) continue;
+                    if (x + 1 < size && y + 1 < size && board[x + 1][y + 1] === c
+                        && groupId[x][y] !== groupId[x + 1][y + 1])
+                        this._drawHandhold(x, y, x + 1, y + 1, c);
+                    if (x + 1 < size && y - 1 >= 0 && board[x + 1][y - 1] === c
+                        && groupId[x][y] !== groupId[x + 1][y - 1])
+                        this._drawHandhold(x, y, x + 1, y - 1, c);
+                }
+            }
+
+            // 4) 표정 — 모든 돌에 (ぷに碁: 돌마다 얼굴)
             for (let x = 0; x < size; x++) {
                 for (let y = 0; y < size; y++) {
                     const c = board[x][y];
