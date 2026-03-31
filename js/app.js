@@ -722,26 +722,15 @@ class BadukApp {
                 }
             }
 
-            // 3.3) 대각선 — 손잡기 (적돌이 끼면 안 그림)
+            // 3.3) 대각선 — 손잡기 (항상 연결)
             for (let x = 0; x < size; x++) {
                 for (let y = 0; y < size; y++) {
                     const c = board[x][y];
                     if (!c) continue;
-                    const enemy = opp(c);
-                    // 오른쪽아래
-                    if (x + 1 < size && y + 1 < size && board[x + 1][y + 1] === c) {
-                        const cut1 = board[x + 1][y], cut2 = board[x][y + 1];
-                        if (cut1 !== enemy && cut2 !== enemy) {
-                            this._drawHandhold(x, y, x + 1, y + 1, c);
-                        }
-                    }
-                    // 오른쪽위
-                    if (x + 1 < size && y - 1 >= 0 && board[x + 1][y - 1] === c) {
-                        const cut1 = board[x + 1][y], cut2 = board[x][y - 1];
-                        if (cut1 !== enemy && cut2 !== enemy) {
-                            this._drawHandhold(x, y, x + 1, y - 1, c);
-                        }
-                    }
+                    if (x + 1 < size && y + 1 < size && board[x + 1][y + 1] === c)
+                        this._drawHandhold(x, y, x + 1, y + 1, c);
+                    if (x + 1 < size && y - 1 >= 0 && board[x + 1][y - 1] === c)
+                        this._drawHandhold(x, y, x + 1, y - 1, c);
                 }
             }
 
