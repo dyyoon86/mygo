@@ -784,13 +784,19 @@ class BadukApp {
                 for (let y = 0; y < size; y++) {
                     const c = board[x][y];
                     if (!c) continue;
+                    // 가로 한 칸 — 대각선 연결석 있으면 스킵
                     if (x + 2 < size && board[x + 1][y] === null && board[x + 2][y] === c
                         && groupId[x][y] !== groupId[x + 2][y]) {
-                        this._drawStickyLine(x, y, x + 2, y, c);
+                        const diag = (y > 0 && board[x + 1][y - 1] === c)
+                                  || (y + 1 < size && board[x + 1][y + 1] === c);
+                        if (!diag) this._drawStickyLine(x, y, x + 2, y, c);
                     }
+                    // 세로 한 칸 — 대각선 연결석 있으면 스킵
                     if (y + 2 < size && board[x][y + 1] === null && board[x][y + 2] === c
                         && groupId[x][y] !== groupId[x][y + 2]) {
-                        this._drawStickyLine(x, y, x, y + 2, c);
+                        const diag = (x > 0 && board[x - 1][y + 1] === c)
+                                  || (x + 1 < size && board[x + 1][y + 1] === c);
+                        if (!diag) this._drawStickyLine(x, y, x, y + 2, c);
                     }
                 }
             }
