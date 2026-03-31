@@ -777,14 +777,46 @@ class BadukApp {
                 }
             }
 
-            // 4) 표정 — 모든 돌에 (ぷに碁: 돌마다 얼굴)
+            // 4) 날일자 (한 칸 떨어짐) — 같은 그룹이면 스킵, 대각 연결석 있으면 스킵
             for (let x = 0; x < size; x++) {
                 for (let y = 0; y < size; y++) {
                     const c = board[x][y];
                     if (!c) continue;
-                    const state = this.getStoneState(x, y);
+                    if (x + 2 < size && board[x + 1][y] === null && board[x + 2][y] === c
+                        && groupId[x][y] !== groupId[x + 2][y]) {
+                        const diag = (y > 0 && board[x + 1][y - 1] === c)
+                                  || (y + 1 < size && board[x + 1][y + 1] === c);
+                        if (!diag) this._drawStickyLine(x, y, x + 2, y, c);
+                    }
+                    if (y + 2 < size && board[x][y + 1] === null && board[x][y + 2] === c
+                        && groupId[x][y] !== groupId[x][y + 2]) {
+                        const diag = (x > 0 && board[x - 1][y + 1] === c)
+                                  || (x + 1 < size && board[x + 1][y + 1] === c);
+                        if (!diag) this._drawStickyLine(x, y, x, y + 2, c);
+                    }
+                }
+            }
+
+            // 5) 표정 — 그룹당 하나 (중심점에)
+            const visited = new Set();
+            for (let x = 0; x < size; x++) {
+                for (let y = 0; y < size; y++) {
+                    const c = board[x][y];
+                    if (!c || visited.has(`${x},${y}`)) continue;
+                    const group = this._getGroup(x, y);
+                    group.forEach(p => visited.add(`${p.x},${p.y}`));
+                    let cx = 0, cy = 0;
+                    group.forEach(p => { cx += p.x; cy += p.y; });
+                    cx = Math.round(cx / group.length);
+                    cy = Math.round(cy / group.length);
+                    let best = group[0], bestDist = Infinity;
+                    group.forEach(p => {
+                        const d = Math.abs(p.x - cx) + Math.abs(p.y - cy);
+                        if (d < bestDist) { bestDist = d; best = p; }
+                    });
+                    const state = this.getStoneState(best.x, best.y);
                     if (state) {
-                        const pos = this.boardToCanvas(x, y);
+                        const pos = this.boardToCanvas(best.x, best.y);
                         this.drawFace(pos, c, state);
                     }
                 }
